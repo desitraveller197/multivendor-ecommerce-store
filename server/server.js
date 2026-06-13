@@ -74,12 +74,13 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 
+// Connect to database
+connectDB();
+
 // Only start listening when run directly (tests import the app without listening).
 if (require.main === module) {
-  connectDB().then(() => {
-    app.listen(PORT, () => {
-      console.log(`✔ API server running on http://localhost:${PORT}  (${process.env.NODE_ENV || 'development'})`);
-    });
+  app.listen(PORT, () => {
+    console.log(`✔ API server running on http://localhost:${PORT}  (${process.env.NODE_ENV || 'development'})`);
   });
 }
 
