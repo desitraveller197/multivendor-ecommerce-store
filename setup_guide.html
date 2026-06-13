@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Setup & Sharing Guide - Bazarix Multivendor Store</title>
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+        },
+      },
+    }
+  </script>
+  <style>
+    @media print {
+      body {
+        background-color: white;
+        color: black;
+      }
+      .no-print {
+        display: none;
+      }
+      .page-break {
+        page-break-before: always;
+      }
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased min-h-screen py-10 px-4 md:px-8">
+
+  <div class="max-w-4xl mx-auto bg-white border border-slate-200 rounded-2xl shadow-xl overflow-hidden p-8 md:p-12 relative">
+    
+    <!-- PDF Print floating badge -->
+    <div class="no-print absolute top-6 right-6">
+      <button onclick="window.print()" class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs py-2 px-4 rounded-lg shadow transition-all duration-200">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0 1 10.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0 .229 1.252a1.125 1.125 0 0 1-1.12 1.25H7.207a1.125 1.125 0 0 1-1.12-1.25L6.34 18m11.318 0h-11.32M19.5 12h-15a1.5 1.5 0 0 0-1.5 1.5v3a1.5 1.5 0 0 0 1.5 1.5h15a1.5 1.5 0 0 0 1.5-1.5v-3a1.5 1.5 0 0 0-1.5-1.5ZM16.5 9V5.25A2.25 2.25 0 0 0 14.25 3h-4.5A2.25 2.25 0 0 0 7.5 5.25V9m9 0H7.5" />
+        </svg>
+        Save / Print to PDF
+      </button>
+    </div>
+
+    <!-- Header Section -->
+    <div class="border-b border-slate-100 pb-8 mb-8">
+      <div class="text-xs font-bold text-blue-600 uppercase tracking-widest mb-1">Developer Operations Guide</div>
+      <h1 class="text-3xl md:text-4xl font-extrabold text-slate-900 leading-tight">Bazarix Multivendor Store</h1>
+      <p class="text-slate-500 mt-2 text-sm md:text-base">A step-by-step setup guide to packaging, running, and configuring the e-commerce application for sharing.</p>
+    </div>
+
+    <!-- Section: Prerequisites -->
+    <section class="mb-10">
+      <h2 class="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
+        <span class="flex items-center justify-center w-7 h-7 rounded-lg bg-blue-50 text-blue-600 text-sm font-bold">1</span>
+        System Prerequisites
+      </h2>
+      <p class="text-slate-600 mb-4 text-sm">Before running the application, make sure your friend has the following software installed on their machine:</p>
+      
+      <div class="grid md:grid-cols-3 gap-4">
+        <div class="border border-slate-100 bg-slate-50/50 p-4 rounded-xl">
+          <div class="font-bold text-slate-900 text-sm">Node.js</div>
+          <div class="text-xs text-slate-500 mt-1">Version v18.0.0 or higher is required to compile React 19 / Vite 8 components.</div>
+        </div>
+        <div class="border border-slate-100 bg-slate-50/50 p-4 rounded-xl">
+          <div class="font-bold text-slate-900 text-sm">MongoDB</div>
+          <div class="text-xs text-slate-500 mt-1">A local MongoDB instance (port 27017) or a MongoDB Atlas Cloud connection string.</div>
+        </div>
+        <div class="border border-slate-100 bg-slate-50/50 p-4 rounded-xl">
+          <div class="font-bold text-slate-900 text-sm">Package Manager</div>
+          <div class="text-xs text-slate-500 mt-1">npm (pre-bundled with Node.js) to retrieve backend and client dependencies.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section: Zipping instructions -->
+    <section class="mb-10 page-break">
+      <h2 class="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
+        <span class="flex items-center justify-center w-7 h-7 rounded-lg bg-blue-50 text-blue-600 text-sm font-bold">2</span>
+        How to Package the Project
+      </h2>
+      <p class="text-slate-600 mb-4 text-sm">To package the project into a compact `.zip` file for sharing, follow these rules:</p>
+      
+      <div class="border border-amber-100 bg-amber-50/50 p-4 rounded-xl text-amber-900 text-xs mb-4">
+        <span class="font-bold">⚠️ IMPORTANT WARNING:</span> Do NOT include the <strong>node_modules/</strong> directories inside either the root, <code>server/</code>, or <code>my-project/</code> folders. These folders contain compiled system dependencies and can exceed 500MB in size. Excluding them keeps the zip file under 15MB.
+      </div>
+
+      <div class="bg-slate-900 text-slate-200 text-xs p-4 rounded-xl font-mono">
+        <!-- Directory structure diagram -->
+        <div>multivendor-ecommerce-store/</div>
+        <div>├── images_clean/ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="text-slate-500"># Include: clean product seed images</span></div>
+        <div>├── my-project/ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="text-slate-500"># Include (except node_modules)</span></div>
+        <div>├── output/ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="text-slate-500"># Include: contains products.json catalog</span></div>
+        <div>├── server/ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="text-slate-500"># Include (except node_modules and uploads)</span></div>
+        <div>└── setup_guide.html &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="text-slate-500"># Include this guide</span></div>
+      </div>
+    </section>
+
+    <!-- Section: Configuration -->
+    <section class="mb-10 page-break">
+      <h2 class="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
+        <span class="flex items-center justify-center w-7 h-7 rounded-lg bg-blue-50 text-blue-600 text-sm font-bold">3</span>
+        Environment Variables Setup
+      </h2>
+      <p class="text-slate-600 mb-4 text-sm">Your friend must configure their environment files after unzipping the files. Provide them with these guidelines:</p>
+      
+      <div class="space-y-4">
+        <div>
+          <div class="font-semibold text-slate-800 text-sm mb-2">Backend Config: Create <code>server/.env</code></div>
+          <pre class="bg-slate-50 border border-slate-200 rounded-xl p-4 text-xs font-mono text-slate-700 overflow-x-auto">
+NODE_ENV=development
+PORT=5000
+MONGO_URI=mongodb+srv://esha:EshaPass123@cluster0.hkigvl5.mongodb.net/multivendor
+JWT_SECRET=change_me_to_a_random_string_at_least_32_chars
+JWT_EXPIRES=7d
+
+# Stripe
+STRIPE_SECRET_KEY=sk_test_xxxxx
+STRIPE_WEBHOOK_SECRET=whsec_xxxxx
+
+# Cloudinary
+CLOUDINARY_CLOUD_NAME=dyugthwsu
+CLOUDINARY_API_KEY=476541276681953
+CLOUDINARY_API_SECRET=qNQGuo0pyabrmez-V7KoMYP_xa8</pre>
+        </div>
+
+        <div>
+          <div class="font-semibold text-slate-800 text-sm mb-2">Frontend Config: Create <code>my-project/.env</code></div>
+          <pre class="bg-slate-50 border border-slate-200 rounded-xl p-4 text-xs font-mono text-slate-700 overflow-x-auto">
+VITE_USE_MOCK=false
+VITE_API_URL=http://localhost:5000/api
+VITE_STRIPE_PUBLIC_KEY=pk_test_51TVEvUIe1B3cFWTU...</pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section: Steps to run -->
+    <section class="mb-10 page-break">
+      <h2 class="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
+        <span class="flex items-center justify-center w-7 h-7 rounded-lg bg-blue-50 text-blue-600 text-sm font-bold">4</span>
+        Installation and Launch Guide
+      </h2>
+      <p class="text-slate-600 mb-4 text-sm">Follow these commands to install the dependencies, seed the database, and launch both frontend and backend development servers.</p>
+      
+      <ol class="space-y-6 text-sm">
+        <li class="relative pl-8 border-l border-slate-100">
+          <div class="absolute -left-[11px] top-0 flex items-center justify-center w-5 h-5 rounded-full bg-blue-600 text-white text-xs font-bold">A</div>
+          <div class="font-bold text-slate-900">Install Packages</div>
+          <p class="text-slate-500 mt-1">Open two separate terminals and navigate into the respective directories to run npm install:</p>
+          <div class="mt-2 grid sm:grid-cols-2 gap-3 font-mono text-xs text-slate-700">
+            <div class="border border-slate-100 p-3 rounded-lg">
+              <span class="text-slate-400"># Terminal 1: Backend</span><br>
+              cd server<br>
+              npm install
+            </div>
+            <div class="border border-slate-100 p-3 rounded-lg">
+              <span class="text-slate-400"># Terminal 2: Frontend</span><br>
+              cd my-project<br>
+              npm install
+            </div>
+          </div>
+        </li>
+
+        <li class="relative pl-8 border-l border-slate-100">
+          <div class="absolute -left-[11px] top-0 flex items-center justify-center w-5 h-5 rounded-full bg-blue-600 text-white text-xs font-bold">B</div>
+          <div class="font-bold text-slate-900">Seed Database Products</div>
+          <p class="text-slate-500 mt-1">To pre-populate categories, admin/customer accounts, shops, and upload product photos to Cloudinary, run the seed commands inside the <code>server/</code> folder:</p>
+          <pre class="bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs font-mono text-slate-700 mt-2">
+cd server
+node seed/seedDatabase.js
+node seed/seedSindhiProducts.js</pre>
+          <div class="mt-2 text-xs text-slate-400">Note: Seeding script will automatically read from <code>output/images_clean/</code> and upload those product images directly to Cloudinary.</div>
+        </li>
+
+        <li class="relative pl-8">
+          <div class="absolute -left-[11px] top-0 flex items-center justify-center w-5 h-5 rounded-full bg-blue-600 text-white text-xs font-bold">C</div>
+          <div class="font-bold text-slate-900">Start the Application Servers</div>
+          <p class="text-slate-500 mt-1">In your two open terminal sessions, start the development instances:</p>
+          <div class="mt-2 grid sm:grid-cols-2 gap-3 font-mono text-xs text-slate-700">
+            <div class="border border-slate-100 p-3 rounded-lg">
+              <span class="text-slate-400"># Terminal 1: API Server</span><br>
+              cd server<br>
+              node server.js
+            </div>
+            <div class="border border-slate-100 p-3 rounded-lg">
+              <span class="text-slate-400"># Terminal 2: Web App</span><br>
+              cd my-project<br>
+              npm run dev
+            </div>
+          </div>
+          <p class="text-slate-600 mt-2 text-xs">Once running, open <strong>http://localhost:5173/</strong> in your web browser to browse the storefront!</p>
+        </li>
+      </ol>
+    </section>
+
+    <!-- Footer -->
+    <div class="border-t border-slate-100 pt-6 mt-8 flex justify-between items-center text-xs text-slate-400">
+      <div>Bazarix Multivendor Platform Guide</div>
+      <div>Generated June 2026</div>
+    </div>
+
+  </div>
+
+</body>
+</html>
