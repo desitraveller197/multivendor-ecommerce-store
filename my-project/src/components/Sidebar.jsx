@@ -17,6 +17,7 @@ const linksByRole = {
     { to: '/seller/dashboard', label: 'Dashboard' },
     { to: '/seller/shop', label: 'My Shop' },
     { to: '/seller/products', label: 'Products' },
+    { to: '/seller/discounts', label: 'Manage Discounts' },
     { to: '/seller/orders', label: 'Orders' },
     { to: '/seller/withdraw', label: 'Withdraw Earnings' },
   ],

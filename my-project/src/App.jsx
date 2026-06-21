@@ -28,6 +28,7 @@ import OrderDetail from './pages/customer/OrderDetail'
 import Wishlist from './pages/customer/Wishlist'
 import AddProduct from './pages/seller/AddProduct'
 import EditProduct from './pages/seller/EditProduct'
+import ManageDiscounts from './pages/seller/ManageDiscounts'
 import MyShop from './pages/seller/MyShop'
 import Products from './pages/seller/Products'
 import SellerDashboard from './pages/seller/SellerDashboard'
@@ -177,6 +178,14 @@ function App() {
               element={
                 <ProtectedRoute roles={['seller']}>
                   <EditProduct />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/seller/discounts"
+              element={
+                <ProtectedRoute roles={['seller']}>
+                  <ManageDiscounts />
                 </ProtectedRoute>
               }
             />
