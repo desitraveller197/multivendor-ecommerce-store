@@ -61,7 +61,7 @@ function ManageDiscounts() {
         } else {
           const [discRes, prodRes, catRes] = await Promise.all([
             axiosInstance.get('/seller/discounts'),
-            axiosInstance.get('/products'),
+            axiosInstance.get('/products?mine=true'),
             axiosInstance.get('/categories'),
           ])
           setDiscounts(discRes.data || [])

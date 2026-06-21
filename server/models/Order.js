@@ -23,7 +23,11 @@ const orderSchema = new mongoose.Schema(
       province: String,
       postalCode: String,
     },
-    paymentMethod: { type: String, enum: ['Stripe', 'COD'], default: 'Stripe' },
+    paymentMethod: {
+      type: String,
+      enum: ['JazzCash', 'Easypaisa', 'COD', 'Stripe'], // Stripe kept for legacy orders
+      default: 'JazzCash',
+    },
     paymentResult: {
       id: String,
       status: String,
@@ -43,7 +47,9 @@ const orderSchema = new mongoose.Schema(
     paidAt: { type: Date },
     isDelivered: { type: Boolean, default: false },
     deliveredAt: { type: Date },
-    stripePaymentIntentId: { type: String, index: true, sparse: true },
+    // Reference we send to the payment gateway (JazzCash/Easypaisa txn ref).
+    gatewayTxnRef: { type: String, index: true, sparse: true },
+    stripePaymentIntentId: { type: String, index: true, sparse: true }, // legacy
   },
   {
     timestamps: true,

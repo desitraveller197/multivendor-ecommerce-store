@@ -14,7 +14,20 @@ function ProductDetail() {
   const products = useSelector((state) => state.products.items)
   const [activeImage, setActiveImage] = useState(0)
   const product = products.find((item) => String(item.id) === id)
-  const [variant, setVariant] = useState('Standard')
+  const [size, setSize] = useState('')
+  const [quantity, setQuantity] = useState(1)
+
+  // Cap the quantity at available stock when the product tracks it.
+  const maxQty = product?.stock > 0 ? product.stock : 99
+  const changeQty = (delta) =>
+    setQuantity((q) => Math.min(maxQty, Math.max(1, q + delta)))
+
+  // Sizes the seller made available for this product (schema variants).
+  const sizeOptions = useMemo(
+    () => (product?.variants || []).map((v) => v.size).filter(Boolean),
+    [product],
+  )
+  const selectedSize = size && sizeOptions.includes(size) ? size : sizeOptions[0] || ''
 
   const wishlistItems = useSelector((state) => state.wishlist.items)
   const isWishlisted = wishlistItems.some((item) => item.id === product?.id)
@@ -70,18 +83,50 @@ function ProductDetail() {
           <h1 className="text-2xl font-bold text-slate-900">{product.name}</h1>
           <p className="mt-2 text-slate-600">{product.description}</p>
           <p className="mt-4 text-2xl font-bold text-blue-700">PKR {product.discountPrice}</p>
-          <div className="mt-3">
-            <p className="mb-1 text-sm text-slate-500">Select variant</p>
-            <VariantSelector
-              options={['Standard', 'Premium', 'Limited']}
-              selected={variant}
-              onChange={setVariant}
-            />
+          {sizeOptions.length > 0 && (
+            <div className="mt-3">
+              <p className="mb-1 text-sm text-slate-500">Select size</p>
+              <VariantSelector
+                options={sizeOptions}
+                selected={selectedSize}
+                onChange={setSize}
+              />
+            </div>
+          )}
+          <div className="mt-4 flex items-center gap-3">
+            <span className="text-sm text-slate-500">Quantity</span>
+            <div className="inline-flex items-center rounded-md border border-slate-300">
+              <button
+                type="button"
+                aria-label="Decrease quantity"
+                className="grid h-7 w-7 place-items-center text-slate-600 hover:bg-slate-50 disabled:opacity-40"
+                onClick={() => changeQty(-1)}
+                disabled={quantity <= 1}
+              >
+                −
+              </button>
+              <span className="w-8 text-center text-sm font-medium text-slate-900">
+                {quantity}
+              </span>
+              <button
+                type="button"
+                aria-label="Increase quantity"
+                className="grid h-7 w-7 place-items-center text-slate-600 hover:bg-slate-50 disabled:opacity-40"
+                onClick={() => changeQty(1)}
+                disabled={quantity >= maxQty}
+              >
+                +
+              </button>
+            </div>
+            {product.stock > 0 && (
+              <span className="text-xs text-slate-400">{product.stock} in stock</span>
+            )}
           </div>
+
           <div className="mt-6 flex items-center gap-3">
             <button
               className="rounded-md bg-blue-600 px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
-              onClick={() => dispatch(addToCart(product))}
+              onClick={() => dispatch(addToCart({ ...product, selectedSize, quantity }))}
             >
               Add to Cart
             </button>

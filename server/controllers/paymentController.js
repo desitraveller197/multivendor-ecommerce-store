@@ -3,88 +3,121 @@ const Product = require('../models/Product');
 const Shop = require('../models/Shop');
 const Notification = require('../models/Notification');
 const sendEmail = require('../utils/sendEmail');
-const { getStripe } = require('../utils/stripe');
+const gateway = require('../utils/paymentGateway');
+
+function clientBaseUrl() {
+  return process.env.CLIENT_URL || 'http://localhost:5173';
+}
 
 /**
- * POST /api/payment/webhook  (public, raw body)
- * Mounted BEFORE express.json() so Stripe signature verification gets the raw bytes.
+ * Mark an order paid exactly once: flip status, decrement stock, bump shop
+ * counters, and notify/email the customer. Safe to call more than once.
  */
-async function stripeWebhook(req, res) {
-  const stripe = getStripe();
-  const sig = req.headers['stripe-signature'];
-  const secret = process.env.STRIPE_WEBHOOK_SECRET;
+async function finalizeOrder(order, result) {
+  if (!order || order.isPaid) return;
 
-  let event;
-  try {
-    if (stripe && secret) {
-      event = stripe.webhooks.constructEvent(req.body, sig, secret);
-    } else {
-      // Dev fallback when no signing secret is configured.
-      event = JSON.parse(req.body.toString());
+  order.isPaid = true;
+  order.paidAt = new Date();
+  order.orderStatus = 'Processing';
+  order.paymentResult = {
+    id: result.id || order.gatewayTxnRef,
+    status: result.status || 'completed',
+    updateTime: new Date().toISOString(),
+    emailAddress: order.customer?.email,
+  };
+  await order.save();
+
+  for (const item of order.orderItems) {
+    await Product.updateOne({ _id: item.product }, { $inc: { stock: -item.qty } });
+    if (item.shop) {
+      await Shop.updateOne(
+        { _id: item.shop },
+        { $inc: { totalRevenue: item.price * item.qty, totalOrders: 1 } }
+      );
     }
-  } catch (err) {
-    return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
-  try {
-    if (event.type === 'payment_intent.succeeded') {
-      const intent = event.data.object;
-      const order = await Order.findOne({ stripePaymentIntentId: intent.id }).populate(
-        'customer',
-        'name email'
-      );
-      if (order && !order.isPaid) {
-        order.isPaid = true;
-        order.paidAt = new Date();
-        order.orderStatus = 'Processing';
-        order.paymentResult = {
-          id: intent.id,
-          status: intent.status,
-          updateTime: new Date().toISOString(),
-          emailAddress: order.customer?.email,
-        };
+  if (order.customer) {
+    await Notification.create({
+      user: order.customer._id,
+      type: 'payment',
+      title: 'Payment received',
+      message: `Your order ${order._id} has been confirmed.`,
+    });
+    if (order.customer.email) {
+      await sendEmail({
+        to: order.customer.email,
+        subject: 'Order confirmation — Multivendor Store',
+        text: `Thank you! Your order ${order._id} is confirmed and now processing.`,
+      }).catch((err) => console.error('Order email failed:', err.message));
+    }
+  }
+}
+
+/** Redirect the buyer's browser back to the storefront result page. */
+function redirectToClient(res, ok, orderId) {
+  const base = clientBaseUrl();
+  const path = ok ? 'checkout/success' : 'checkout/cancel';
+  res.redirect(`${base}/${path}?orderId=${orderId || ''}`);
+}
+
+/**
+ * POST/GET /api/payment/:method/return
+ * The gateway redirects the buyer here after payment. We verify the signed
+ * response, finalize the order, then bounce the browser to the result page.
+ */
+function gatewayReturn(method) {
+  return async function handler(req, res) {
+    const body = { ...req.query, ...req.body };
+    let order = null;
+    let ok = false;
+    try {
+      const { valid, success, txnRef } = gateway.verifyResponse(method, body);
+      order = await Order.findOne({ gatewayTxnRef: txnRef }).populate('customer', 'name email');
+      if (order && valid && success) {
+        await finalizeOrder(order, { id: txnRef, status: 'completed' });
+        ok = true;
+      } else if (order && !success) {
+        order.orderStatus = 'Cancelled';
         await order.save();
-
-        // Decrement stock and bump shop counters.
-        for (const item of order.orderItems) {
-          await Product.updateOne({ _id: item.product }, { $inc: { stock: -item.qty } });
-          if (item.shop) {
-            await Shop.updateOne(
-              { _id: item.shop },
-              { $inc: { totalRevenue: item.price * item.qty, totalOrders: 1 } }
-            );
-          }
-        }
-
-        // Notify + email the customer.
-        if (order.customer) {
-          await Notification.create({
-            user: order.customer._id,
-            type: 'payment',
-            title: 'Payment received',
-            message: `Your order ${order._id} has been confirmed.`,
-          });
-          await sendEmail({
-            to: order.customer.email,
-            subject: 'Order confirmation — Multivendor Store',
-            text: `Thank you! Your order ${order._id} is confirmed and now processing.`,
-          });
-        }
       }
-    } else if (event.type === 'payment_intent.payment_failed') {
-      const intent = event.data.object;
-      const order = await Order.findOne({ stripePaymentIntentId: intent.id });
-      if (order) {
+    } catch (err) {
+      console.error(`${method} return error:`, err.message);
+    }
+    redirectToClient(res, ok, order ? order._id : '');
+  };
+}
+
+/**
+ * GET /api/payment/simulate?orderId=..&status=success
+ * Dev-only fallback used when gateway credentials are not configured: marks the
+ * order paid (or cancelled) and redirects to the result page, mimicking the
+ * gateway round-trip so the checkout flow works locally.
+ */
+async function simulateReturn(req, res) {
+  const { orderId, status } = req.query;
+  let ok = false;
+  let order = null;
+  try {
+    order = await Order.findById(orderId).populate('customer', 'name email');
+    if (order) {
+      if (status === 'success') {
+        await finalizeOrder(order, { id: order.gatewayTxnRef, status: 'simulated' });
+        ok = true;
+      } else {
         order.orderStatus = 'Cancelled';
         await order.save();
       }
     }
   } catch (err) {
-    // Log but still 200 so Stripe doesn't retry indefinitely on app-side errors.
-    console.error('Webhook handler error:', err.message);
+    console.error('Simulated payment error:', err.message);
   }
-
-  res.json({ received: true });
+  redirectToClient(res, ok, orderId);
 }
 
-module.exports = { stripeWebhook };
+module.exports = {
+  finalizeOrder,
+  jazzcashReturn: gatewayReturn('JazzCash'),
+  easypaisaReturn: gatewayReturn('Easypaisa'),
+  simulateReturn,
+};

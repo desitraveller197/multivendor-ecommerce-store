@@ -2,9 +2,13 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useDispatch } from 'react-redux'
 import Sidebar from '../../components/Sidebar'
+import SizeSelector from '../../components/SizeSelector'
 import axiosInstance from '../../api/axiosConfig'
 import { USE_MOCK, delay } from '../../api/mockApi'
 import { fetchProducts } from '../../store/productSlice'
+
+// Regions used by the storefront's Regional filter (must match those labels).
+const REGION_OPTIONS = ['Punjab', 'Sindh', 'KPK', 'Balochistan']
 
 function EditProduct() {
   const { id } = useParams()
@@ -82,42 +86,133 @@ function EditProduct() {
         ) : !form ? (
           <p className="mt-4 text-slate-600">Product not found.</p>
         ) : (
-          <form onSubmit={handleSubmit} className="mt-4">
-            <div className="grid gap-3 md:grid-cols-2">
-              <input
-                value={form.name}
-                className="rounded border border-slate-300 px-3 py-2"
-                onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
-              />
-              <input
-                value={form.category}
-                className="rounded border border-slate-300 px-3 py-2"
-                onChange={(event) => setForm((prev) => ({ ...prev, category: event.target.value }))}
-              />
-              <input
-                type="number"
-                value={form.price}
-                className="rounded border border-slate-300 px-3 py-2"
-                onChange={(event) => setForm((prev) => ({ ...prev, price: Number(event.target.value) }))}
-              />
-              <input
-                type="number"
-                value={form.discountPrice}
-                className="rounded border border-slate-300 px-3 py-2"
-                onChange={(event) =>
-                  setForm((prev) => ({ ...prev, discountPrice: Number(event.target.value) }))
-                }
+          <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+            <div className="grid gap-4 md:grid-cols-2">
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1">
+                  Product Name
+                </label>
+                <input
+                  required
+                  value={form.name || ''}
+                  className="w-full rounded border border-slate-300 px-3 py-2 text-slate-900 focus:border-blue-500 focus:outline-none"
+                  onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1">
+                  Category
+                </label>
+                <input
+                  required
+                  value={form.category || ''}
+                  className="w-full rounded border border-slate-300 px-3 py-2 text-slate-900 focus:border-blue-500 focus:outline-none"
+                  onChange={(event) => setForm((prev) => ({ ...prev, category: event.target.value }))}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1">
+                  Region
+                </label>
+                <select
+                  value={form.region || ''}
+                  className="w-full rounded border border-slate-300 px-3 py-2 text-slate-900 focus:border-blue-500 focus:outline-none"
+                  onChange={(event) => setForm((prev) => ({ ...prev, region: event.target.value }))}
+                >
+                  <option value="">Select region…</option>
+                  {REGION_OPTIONS.map((region) => (
+                    <option key={region} value={region}>
+                      {region}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1">
+                  Price (Rs.)
+                </label>
+                <input
+                  required
+                  type="number"
+                  value={form.price || 0}
+                  className="w-full rounded border border-slate-300 px-3 py-2 text-slate-900 focus:border-blue-500 focus:outline-none"
+                  onChange={(event) => setForm((prev) => ({ ...prev, price: Number(event.target.value) }))}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1">
+                  Discount Price (Rs.)
+                </label>
+                <input
+                  type="number"
+                  value={form.discountPrice || 0}
+                  className="w-full rounded border border-slate-300 px-3 py-2 text-slate-900 focus:border-blue-500 focus:outline-none"
+                  onChange={(event) =>
+                    setForm((prev) => ({ ...prev, discountPrice: Number(event.target.value) }))
+                  }
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1">
+                  Stock Quantity (Available)
+                </label>
+                <input
+                  required
+                  type="number"
+                  min="0"
+                  value={form.stock !== undefined ? form.stock : 0}
+                  className="w-full rounded border border-slate-300 px-3 py-2 text-slate-900 focus:border-blue-500 focus:outline-none font-semibold text-blue-700"
+                  onChange={(event) => setForm((prev) => ({ ...prev, stock: Number(event.target.value) }))}
+                />
+                <p className="mt-1 text-xs text-slate-500">
+                  Update this value to increase/decrease stock.
+                </p>
+              </div>
+            </div>
+
+            <SizeSelector
+              selected={(form.variants || []).map((v) => v.size).filter(Boolean)}
+              onChange={(sizes) =>
+                setForm((prev) => ({ ...prev, variants: sizes.map((size) => ({ size })) }))
+              }
+            />
+
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-1">
+                Description
+              </label>
+              <textarea
+                required
+                rows="4"
+                value={form.description || ''}
+                className="w-full rounded border border-slate-300 px-3 py-2 text-slate-900 focus:border-blue-500 focus:outline-none"
+                onChange={(event) => setForm((prev) => ({ ...prev, description: event.target.value }))}
               />
             </div>
             
             {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
             
-            <button 
-              disabled={submitting}
-              className="mt-4 rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
-            >
-              {submitting ? 'Saving...' : 'Save Changes'}
-            </button>
+            <div className="flex gap-3 pt-2">
+              <button 
+                type="submit"
+                disabled={submitting}
+                className="rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+              >
+                {submitting ? 'Saving...' : 'Save Changes'}
+              </button>
+              <button
+                type="button"
+                className="rounded border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                onClick={() => navigate('/seller/products')}
+              >
+                Cancel
+              </button>
+            </div>
           </form>
         )}
       </div>

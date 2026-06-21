@@ -1,9 +1,19 @@
 const express = require('express');
-const { stripeWebhook } = require('../controllers/paymentController');
+const {
+  jazzcashReturn,
+  easypaisaReturn,
+  simulateReturn,
+} = require('../controllers/paymentController');
 
 const router = express.Router();
 
-// NOTE: the raw body parser for this route is applied in server.js BEFORE express.json().
-router.post('/webhook', stripeWebhook);
+// Gateways redirect the buyer back here after payment (form-POST or GET).
+router.post('/jazzcash/return', jazzcashReturn);
+router.get('/jazzcash/return', jazzcashReturn);
+router.post('/easypaisa/return', easypaisaReturn);
+router.get('/easypaisa/return', easypaisaReturn);
+
+// Dev fallback used when no gateway credentials are configured.
+router.get('/simulate', simulateReturn);
 
 module.exports = router;

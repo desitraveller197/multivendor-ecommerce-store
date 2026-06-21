@@ -36,6 +36,8 @@ const CATEGORY_CULTURE_MAP = {
 /** Home / URL culture filters may use labels that map to product categories or stored culture. */
 function cultureFilterMatches(item, selectedCultures, effectiveCulture) {
   if (selectedCultures.length === 0) return true
+  // "General" is a catch-all — selecting it shows products from every region/culture.
+  if (selectedCultures.includes('General')) return true
   return selectedCultures.some((sel) => {
     if (sel === effectiveCulture) return true
     if (sel === 'Cultural Accessories' && item.category === 'Footwear (Chappals)') return true

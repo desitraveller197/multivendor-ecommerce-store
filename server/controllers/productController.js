@@ -23,10 +23,16 @@ const listProducts = asyncHandler(async (req, res) => {
 
   const filter = { isPublished: true };
 
-  // A seller hitting /products from their dashboard sees only their own products.
-  if (req.user && req.user.role === 'seller') {
+  // The seller dashboard explicitly asks for its own products via ?mine=true
+  // (including unpublished ones). Without that flag /products stays public, so
+  // a logged-in seller still sees the full storefront on Home/Regional/Listing.
+  if (req.query.mine === 'true' && req.user && req.user.role === 'seller') {
     delete filter.isPublished;
     filter.seller = req.user._id;
+  }
+
+  if (req.query.region && req.query.region !== 'all') {
+    filter.region = req.query.region;
   }
 
   if (req.query.category && req.query.category !== 'all') {

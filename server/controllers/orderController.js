@@ -1,11 +1,17 @@
 const asyncHandler = require('../utils/asyncHandler');
 const Order = require('../models/Order');
 const Product = require('../models/Product');
-const { getStripe } = require('../utils/stripe');
+const gateway = require('../utils/paymentGateway');
 
 const FREE_SHIPPING_THRESHOLD = 5000; // PKR
 const FLAT_SHIPPING = 200; // PKR
 const TAX_RATE = 0.05;
+
+const GATEWAY_METHODS = ['JazzCash', 'Easypaisa'];
+
+function serverBaseUrl() {
+  return process.env.SERVER_URL || `http://localhost:${process.env.PORT || 5000}`;
+}
 
 /**
  * Convert an Order document into the flattened shape the frontend reads:
@@ -46,6 +52,14 @@ const createOrder = asyncHandler(async (req, res) => {
     res.status(400);
     throw new Error('No order items provided');
   }
+
+  // Normalize to a supported method (defaults to JazzCash for unknown values).
+  const method =
+    paymentMethod === 'COD'
+      ? 'COD'
+      : GATEWAY_METHODS.includes(paymentMethod)
+      ? paymentMethod
+      : 'JazzCash';
 
   // Re-fetch every product from DB — never trust client prices.
   const orderItems = [];
@@ -90,7 +104,7 @@ const createOrder = asyncHandler(async (req, res) => {
         province: address?.province,
         postalCode: address?.postal || address?.postalCode,
       };
-      order.paymentMethod = paymentMethod === 'COD' ? 'COD' : 'Stripe';
+      order.paymentMethod = method;
       order.itemsPrice = itemsPrice;
       order.shippingPrice = shippingPrice;
       order.taxPrice = taxPrice;
@@ -111,7 +125,7 @@ const createOrder = asyncHandler(async (req, res) => {
         province: address?.province,
         postalCode: address?.postal || address?.postalCode,
       },
-      paymentMethod: paymentMethod === 'COD' ? 'COD' : 'Stripe',
+      paymentMethod: method,
       itemsPrice,
       shippingPrice,
       taxPrice,
@@ -120,41 +134,43 @@ const createOrder = asyncHandler(async (req, res) => {
     });
   }
 
-  // COD: no PaymentIntent needed.
+  // COD: nothing to collect online — order is placed straight away.
   if (order.paymentMethod === 'COD') {
-    return res.status(201).json({ clientSecret: null, orderId: order._id });
+    return res.status(201).json({ orderId: order._id, payment: { type: 'cod' } });
   }
 
-  // Stripe PaymentIntent (amount in the smallest currency unit).
-  const stripe = getStripe();
-  if (!stripe) {
-    res.status(500);
-    throw new Error('Stripe is not configured on the server');
-  }
+  // Gateway (JazzCash / Easypaisa): generate a txn reference for this attempt.
+  const txnRef = `T${gateway.formatDateTime(new Date())}${Math.floor(1000 + Math.random() * 9000)}`;
+  order.gatewayTxnRef = txnRef;
+  await order.save();
 
-  let intent;
-  if (order.stripePaymentIntentId) {
-    try {
-      intent = await stripe.paymentIntents.update(order.stripePaymentIntentId, {
-        amount: totalPrice * 100,
-      });
-    } catch (err) {
-      intent = null;
-    }
-  }
-
-  if (!intent) {
-    intent = await stripe.paymentIntents.create({
-      amount: totalPrice * 100,
-      currency: 'pkr',
-      metadata: { orderId: order._id.toString() },
-      automatic_payment_methods: { enabled: true },
+  // Without live credentials, fall back to a simulated success so the flow
+  // still works in development. Configure the gateway env vars to go live.
+  if (!gateway.isConfigured(order.paymentMethod)) {
+    return res.status(201).json({
+      orderId: order._id,
+      payment: {
+        type: 'simulate',
+        method: order.paymentMethod,
+        url: `${serverBaseUrl()}/api/payment/simulate?orderId=${order._id}&status=success`,
+      },
     });
-    order.stripePaymentIntentId = intent.id;
-    await order.save();
   }
 
-  res.status(201).json({ clientSecret: intent.client_secret, orderId: order._id });
+  const returnUrl = `${serverBaseUrl()}/api/payment/${order.paymentMethod.toLowerCase()}/return`;
+  const { postUrl, fields } = gateway.buildRequest(order.paymentMethod, {
+    amountPkr: totalPrice,
+    txnRef,
+    orderRef: txnRef,
+    description: `Order ${order._id}`,
+    returnUrl,
+  });
+
+  // The browser auto-POSTs these fields to `postUrl` (the gateway's page).
+  res.status(201).json({
+    orderId: order._id,
+    payment: { type: 'redirect', method: order.paymentMethod, postUrl, fields },
+  });
 });
 
 // GET /api/orders/myorders  (customer)

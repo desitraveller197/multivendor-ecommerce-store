@@ -2,10 +2,13 @@ import { useState } from 'react'
 import { useDispatch } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
 import Sidebar from '../../components/Sidebar'
-import VariantBuilder from '../../components/VariantBuilder'
+import SizeSelector from '../../components/SizeSelector'
 import { addProduct, fetchProducts } from '../../store/productSlice'
 import axiosInstance from '../../api/axiosConfig'
 import { USE_MOCK, delay } from '../../api/mockApi'
+
+// Regions used by the storefront's Regional filter (must match those labels).
+const REGION_OPTIONS = ['Punjab', 'Sindh', 'KPK', 'Balochistan']
 
 function AddProduct() {
   const dispatch = useDispatch()
@@ -21,11 +24,12 @@ function AddProduct() {
     name: '',
     description: '',
     category: 'Clothing',
+    region: 'Punjab',
     price: 0,
     discountPrice: 0,
     stock: 0,
     image: '',
-    variants: [],
+    sizes: [],
   })
 
   const handleSubmit = async (event) => {
@@ -50,24 +54,20 @@ function AddProduct() {
       }
       
       setSubmitLabel('Saving product...')
+      // Persist selected sizes as schema-shaped variants ({ size }).
+      const { sizes, ...rest } = form
+      const payload = {
+        ...rest,
+        variants: sizes.map((size) => ({ size })),
+        image: imageUrl,
+        seller: 'My Shop',
+        rating: 0,
+      }
       if (USE_MOCK) {
         await delay(600)
-        dispatch(
-          addProduct({
-            ...form,
-            id: Date.now(),
-            image: imageUrl,
-            seller: 'My Shop',
-            rating: 0,
-          })
-        )
+        dispatch(addProduct({ ...payload, id: Date.now() }))
       } else {
-        await axiosInstance.post('/products', {
-          ...form,
-          image: imageUrl,
-          seller: 'My Shop',
-          rating: 0,
-        })
+        await axiosInstance.post('/products', payload)
         dispatch(fetchProducts())
       }
       navigate('/seller/products')
@@ -97,6 +97,19 @@ function AddProduct() {
             className="rounded border border-slate-300 px-3 py-2"
             onChange={(event) => setForm((prev) => ({ ...prev, category: event.target.value }))}
           />
+          <select
+            required
+            value={form.region}
+            className="rounded border border-slate-300 px-3 py-2 text-slate-900"
+            onChange={(event) => setForm((prev) => ({ ...prev, region: event.target.value }))}
+          >
+            <option value="">Select region…</option>
+            {REGION_OPTIONS.map((region) => (
+              <option key={region} value={region}>
+                {region}
+              </option>
+            ))}
+          </select>
           <input
             required
             type="number"
@@ -151,10 +164,9 @@ function AddProduct() {
             onChange={(event) => setForm((prev) => ({ ...prev, description: event.target.value }))}
           />
           <div className="col-span-full">
-            <VariantBuilder
-              onCreate={(variant) =>
-                setForm((prev) => ({ ...prev, variants: [...prev.variants, variant] }))
-              }
+            <SizeSelector
+              selected={form.sizes}
+              onChange={(sizes) => setForm((prev) => ({ ...prev, sizes }))}
             />
           </div>
         </div>

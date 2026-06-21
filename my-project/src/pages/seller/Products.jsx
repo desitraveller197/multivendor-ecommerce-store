@@ -28,7 +28,7 @@ function Products() {
             { id: 21, name: 'Gujranwala Copper Karahi', category: 'Handicrafts & Decor', price: 6900, discountPrice: 6290, stock: 14 },
           ])
         } else {
-          const res = await axiosInstance.get('/products')
+          const res = await axiosInstance.get('/products?mine=true')
           setProducts(res.data)
         }
       } catch (err) {

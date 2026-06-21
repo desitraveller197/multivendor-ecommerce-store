@@ -29,13 +29,15 @@ const cartSlice = createSlice({
     addToCart: (state, action) => {
       // Support both `id` (mock data) and `_id` (MongoDB)
       const productId = action.payload._id || action.payload.id
+      // Honor an explicit quantity (from the product detail selector); default 1.
+      const qty = action.payload.quantity > 0 ? action.payload.quantity : 1
       const existingItem = state.items.find(
         (item) => (item._id || item.id) === productId,
       )
       if (existingItem) {
-        existingItem.quantity += 1
+        existingItem.quantity += qty
       } else {
-        state.items.push({ ...action.payload, quantity: 1 })
+        state.items.push({ ...action.payload, quantity: qty })
       }
       state.lastAdded = action.payload.name || 'Item'
       saveCartToStorage(state.items)

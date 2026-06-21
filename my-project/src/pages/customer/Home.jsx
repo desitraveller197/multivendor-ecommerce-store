@@ -6,15 +6,30 @@ import { addToCart } from '../../store/cartSlice'
 
 function Home() {
   const dispatch = useDispatch()
-  const { items, categories } = useSelector((state) => state.products)
+  const { items } = useSelector((state) => state.products)
 
   const featured = useMemo(() => {
-    const firstByCategory = new Map()
-    for (const p of items) {
-      if (p.category && !firstByCategory.has(p.category)) firstByCategory.set(p.category, p)
+    // Newest first, so any just-added product always surfaces in Featured.
+    const newestFirst = [...items].sort(
+      (a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0),
+    )
+    const seenCategory = new Set()
+    const picked = []
+    // Lead with one product per category (newest of each) for variety.
+    for (const p of newestFirst) {
+      const cat = p.category || 'Other'
+      if (!seenCategory.has(cat)) {
+        seenCategory.add(cat)
+        picked.push(p)
+      }
     }
-    return categories.map((c) => firstByCategory.get(c)).filter(Boolean)
-  }, [items, categories])
+    // Fill any remaining slots with the next newest products.
+    for (const p of newestFirst) {
+      if (picked.length >= 8) break
+      if (!picked.includes(p)) picked.push(p)
+    }
+    return picked.slice(0, 8)
+  }, [items])
   const regionalCollections = [
     {
       name: 'Punjab Products',
