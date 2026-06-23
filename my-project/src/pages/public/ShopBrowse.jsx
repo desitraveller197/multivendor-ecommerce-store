@@ -50,7 +50,7 @@ function ShopBrowse() {
               <Link
                 key={shop.id || shop._id}
                 to={`/shops/${shop.id || shop._id}`}
-                className="rounded-lg border border-slate-200 p-4 font-medium text-slate-800 hover:border-blue-500 hover:text-blue-700 transition"
+                className="block rounded-lg border border-slate-200 p-4 font-medium text-slate-800 transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-400 hover:text-blue-700 hover:shadow-sm"
               >
                 {shop.name}
               </Link>

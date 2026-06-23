@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import axiosInstance from '../../api/axiosConfig'
 import { USE_MOCK, delay } from '../../api/mockApi'
 import Sidebar from '../../components/Sidebar'
+import PageFrame from '../../components/PageFrame'
 
 const fetchCategories = async () => {
   if (USE_MOCK) {
@@ -90,15 +91,15 @@ function ManageCategories() {
   }
 
   return (
-    <section className="grid gap-4 md:grid-cols-[240px_1fr]">
-      <Sidebar role="admin" />
-      <div className="rounded-lg bg-white p-6 shadow-sm">
-        <h1 className="text-2xl font-bold text-slate-900">Manage Categories</h1>
-        <div className="mt-4 flex flex-col gap-1">
+    <PageFrame title="Manage Categories" description="Add or remove the product categories used across the store.">
+      <div className="grid gap-4 md:grid-cols-[240px_1fr]">
+        <Sidebar role="admin" />
+        <div className="rounded-lg bg-white p-6 shadow-sm">
+        <div className="mt-1 flex flex-col gap-1">
           <div className="flex gap-2">
             <input
-              className={`rounded border px-3 py-2 outline-none focus:border-blue-500 ${inputError ? 'border-red-400' : 'border-slate-300'}`}
-              placeholder="New category"
+              className={`flex-1 rounded border px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 ${inputError ? 'border-red-400' : 'border-slate-300'}`}
+              placeholder="New category name"
               value={newCategory}
               onChange={(event) => {
                 setNewCategory(event.target.value)
@@ -106,7 +107,7 @@ function ManageCategories() {
               }}
             />
             <button
-              className="rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition-colors"
+              className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-all duration-300 hover:-translate-y-0.5 hover:bg-blue-700 hover:shadow-md focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
               onClick={handleAdd}
             >
               Add
@@ -117,16 +118,19 @@ function ManageCategories() {
         <div className="mt-4 space-y-2">
           {loading ? (
             <>
-              <div className="h-10 animate-pulse rounded bg-slate-100" />
-              <div className="h-10 animate-pulse rounded bg-slate-100" />
-              <div className="h-10 animate-pulse rounded bg-slate-100" />
+              <div className="h-12 animate-pulse rounded-lg bg-slate-100" />
+              <div className="h-12 animate-pulse rounded-lg bg-slate-100" />
+              <div className="h-12 animate-pulse rounded-lg bg-slate-100" />
             </>
           ) : (
             categories.map((category) => (
-              <div key={category.id} className="flex items-center justify-between rounded border border-slate-200 p-3">
-                <span>{category.name}</span>
+              <div
+                key={category.id}
+                className="flex items-center justify-between rounded-lg border border-slate-200 p-3 transition-all duration-200 hover:border-slate-300 hover:shadow-sm"
+              >
+                <span className="font-medium text-slate-800">{category.name}</span>
                 <button
-                  className="rounded bg-red-500 px-3 py-1 text-sm text-white hover:bg-red-600 transition-colors"
+                  className="rounded-md bg-red-500 px-3 py-1.5 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-red-600 hover:shadow-sm"
                   onClick={() => handleDelete(category.id)}
                 >
                   Delete
@@ -135,8 +139,9 @@ function ManageCategories() {
             ))
           )}
         </div>
+        </div>
       </div>
-    </section>
+    </PageFrame>
   )
 }
 

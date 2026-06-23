@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import Sidebar from '../../components/Sidebar'
+import PageFrame from '../../components/PageFrame'
 import axiosInstance from '../../api/axiosConfig'
 import { USE_MOCK, delay } from '../../api/mockApi'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
@@ -24,7 +25,6 @@ function SellerDashboard() {
         }
       } catch (err) {
         console.error("Failed to fetch stats:", err)
-        // Fallback: show zeros instead of crashing
         setStats({ products: 0, revenue: 0, orders: 0 })
         setStatsError('Could not load stats from server.')
       } finally {
@@ -63,44 +63,43 @@ function SellerDashboard() {
   }, [])
 
   return (
-    <section className="grid gap-4 md:grid-cols-[240px_1fr]">
-      <Sidebar role="seller" />
-      <div className="rounded-lg bg-white p-6 shadow-sm">
-        <h1 className="text-2xl font-bold text-slate-900">Seller Dashboard</h1>
-        
+    <PageFrame title="Seller Dashboard" description="Track your products, revenue, and recent orders at a glance.">
+      <div className="grid gap-4 md:grid-cols-[240px_1fr]">
+        <Sidebar role="seller" />
+        <div className="rounded-lg bg-white p-6 shadow-sm">
         {statsError && (
           <p className="mt-2 text-sm text-amber-600">{statsError}</p>
         )}
 
         {statsLoading ? (
           <div className="mt-4 grid gap-3 sm:grid-cols-3">
-            <div className="h-24 animate-pulse rounded border border-slate-200 bg-slate-100 p-3" />
-            <div className="h-24 animate-pulse rounded border border-slate-200 bg-slate-100 p-3" />
-            <div className="h-24 animate-pulse rounded border border-slate-200 bg-slate-100 p-3" />
+            <div className="h-24 animate-pulse rounded-lg border border-slate-200 bg-slate-100" />
+            <div className="h-24 animate-pulse rounded-lg border border-slate-200 bg-slate-100" />
+            <div className="h-24 animate-pulse rounded-lg border border-slate-200 bg-slate-100" />
           </div>
         ) : (
           <div className="mt-4 grid gap-3 sm:grid-cols-3">
-            <div className="rounded border border-slate-200 p-3">
+            <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
               <p className="text-sm text-slate-500">Products</p>
-              <p className="text-xl font-bold text-slate-900">{stats?.products ?? 0}</p>
+              <p className="mt-1 text-2xl font-bold text-slate-900">{stats?.products ?? 0}</p>
             </div>
-            <div className="rounded border border-slate-200 p-3">
+            <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
               <p className="text-sm text-slate-500">Revenue</p>
-              <p className="text-xl font-bold text-slate-900">PKR {stats?.revenue?.toLocaleString() || 0}</p>
+              <p className="mt-1 text-2xl font-bold text-blue-700">PKR {stats?.revenue?.toLocaleString() || 0}</p>
             </div>
-            <div className="rounded border border-slate-200 p-3">
+            <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
               <p className="text-sm text-slate-500">Recent Orders</p>
-              <p className="text-xl font-bold text-slate-900">{stats?.orders ?? 0}</p>
+              <p className="mt-1 text-2xl font-bold text-slate-900">{stats?.orders ?? 0}</p>
             </div>
           </div>
         )}
 
         {chartLoading ? (
-          <div className="mt-6 h-48 animate-pulse rounded bg-slate-100" />
+          <div className="mt-6 h-48 animate-pulse rounded-lg bg-slate-100" />
         ) : chartData.length > 0 ? (
           <>
-            <h2 className="mt-6 text-lg font-semibold text-slate-800">Monthly Revenue</h2>
-            <div className="mt-3 rounded-lg bg-white p-4 shadow-sm">
+            <h2 className="mt-6 text-lg font-semibold text-slate-900">Monthly Revenue</h2>
+            <div className="mt-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
               <ResponsiveContainer width="100%" height={240}>
                 <BarChart data={chartData}>
                   <XAxis dataKey="month" tick={{ fontSize: 12 }} />
@@ -113,13 +112,14 @@ function SellerDashboard() {
           </>
         ) : (
           <>
-            <h2 className="mt-6 text-lg font-semibold text-slate-800">Monthly Revenue</h2>
+            <h2 className="mt-6 text-lg font-semibold text-slate-900">Monthly Revenue</h2>
             {chartError && <p className="mt-2 text-sm text-amber-600">{chartError}</p>}
             <p className="mt-2 text-sm text-slate-500">No revenue data available yet. Start selling to see your chart!</p>
           </>
         )}
+        </div>
       </div>
-    </section>
+    </PageFrame>
   )
 }
 

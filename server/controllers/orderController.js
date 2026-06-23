@@ -7,8 +7,6 @@ const FREE_SHIPPING_THRESHOLD = 5000; // PKR
 const FLAT_SHIPPING = 200; // PKR
 const TAX_RATE = 0.05;
 
-const GATEWAY_METHODS = ['JazzCash', 'Easypaisa'];
-
 function serverBaseUrl() {
   return process.env.SERVER_URL || `http://localhost:${process.env.PORT || 5000}`;
 }
@@ -53,13 +51,8 @@ const createOrder = asyncHandler(async (req, res) => {
     throw new Error('No order items provided');
   }
 
-  // Normalize to a supported method (defaults to JazzCash for unknown values).
-  const method =
-    paymentMethod === 'COD'
-      ? 'COD'
-      : GATEWAY_METHODS.includes(paymentMethod)
-      ? paymentMethod
-      : 'JazzCash';
+  // Online card payments settle to the Easypaisa merchant account; COD is cash.
+  const method = paymentMethod === 'COD' ? 'COD' : 'Easypaisa';
 
   // Re-fetch every product from DB — never trust client prices.
   const orderItems = [];
@@ -132,6 +125,13 @@ const createOrder = asyncHandler(async (req, res) => {
       totalPrice,
       orderStatus: 'Pending',
     });
+  }
+
+  // Record only non-sensitive card details (brand + last 4). The full card
+  // number and CVV are never sent to or stored on the server.
+  if (order.paymentMethod === 'Easypaisa' && req.body.card) {
+    order.cardBrand = String(req.body.card.brand || '').slice(0, 20);
+    order.cardLast4 = String(req.body.card.last4 || '').replace(/\D/g, '').slice(-4);
   }
 
   // COD: nothing to collect online — order is placed straight away.

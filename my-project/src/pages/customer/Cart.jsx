@@ -1,5 +1,6 @@
 import { useDispatch, useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
+import PageFrame from '../../components/PageFrame'
 import { addToCart, decrementQuantity, removeFromCart } from '../../store/cartSlice'
 
 function Cart() {
@@ -13,15 +14,15 @@ function Cart() {
   const getItemId = (item) => item._id || item.id
 
   return (
-    <section className="rounded-lg bg-white p-6 shadow-sm">
-      <h1 className="text-2xl font-bold text-slate-900">Your Cart</h1>
-      <div className="mt-4 space-y-3">
+    <PageFrame title="Your Cart" description="Review your items, adjust quantities, and proceed to checkout.">
+      <section className="rounded-lg bg-white p-6 shadow-sm">
+      <div className="space-y-3">
         {cartItems.length === 0 ? (
-          <div className="py-8 text-center">
+          <div className="py-12 text-center">
             <p className="text-slate-600">Your cart is empty.</p>
             <Link
               to="/products"
-              className="mt-3 inline-block rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+              className="mt-4 inline-block rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-all duration-300 hover:-translate-y-0.5 hover:bg-blue-700 hover:shadow-md"
             >
               Browse Products
             </Link>
@@ -30,7 +31,7 @@ function Cart() {
           cartItems.map((item) => (
             <div
               key={getItemId(item)}
-              className="flex items-center justify-between rounded-md border border-slate-200 p-3"
+              className="flex items-center justify-between rounded-lg border border-slate-200 p-3 transition-all duration-200 hover:border-slate-300 hover:shadow-sm"
             >
               <div className="flex items-center gap-3">
                 {item.image && (
@@ -44,30 +45,30 @@ function Cart() {
                   />
                 )}
                 <div>
-                  <p className="font-medium text-slate-800">{item.name}</p>
-                  <p className="text-sm text-slate-600">
-                    PKR {item.discountPrice ?? item.price} x {item.quantity}
+                  <p className="font-semibold text-slate-900">{item.name}</p>
+                  <p className="text-sm text-blue-700 font-bold">
+                    PKR {item.discountPrice ?? item.price} × {item.quantity}
                   </p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
                 <button
-                  className="rounded border border-slate-300 px-2 py-1 text-sm font-semibold hover:bg-slate-100"
+                  className="rounded border border-slate-300 px-2 py-1 text-sm font-bold text-slate-700 transition-colors hover:bg-slate-50"
                   onClick={() => dispatch(decrementQuantity(getItemId(item)))}
                 >
                   −
                 </button>
-                <span className="min-w-[1.5rem] text-center font-semibold text-slate-800">
+                <span className="min-w-[1.5rem] text-center font-semibold text-slate-900">
                   {item.quantity}
                 </span>
                 <button
-                  className="rounded border border-slate-300 px-2 py-1 text-sm font-semibold hover:bg-slate-100"
+                  className="rounded border border-slate-300 px-2 py-1 text-sm font-bold text-slate-700 transition-colors hover:bg-slate-50"
                   onClick={() => dispatch(addToCart(item))}
                 >
                   +
                 </button>
                 <button
-                  className="rounded-md bg-red-500 px-3 py-1 text-sm text-white hover:bg-red-600"
+                  className="rounded-md bg-red-500 px-3 py-1.5 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-red-600 hover:shadow-sm"
                   onClick={() => dispatch(removeFromCart(getItemId(item)))}
                 >
                   Remove
@@ -80,18 +81,21 @@ function Cart() {
 
       {cartItems.length > 0 && (
         <>
-          <p className="mt-5 text-lg font-semibold text-slate-900">
-            Total: PKR {total.toFixed(2)}
-          </p>
-          <Link
-            to="/checkout"
-            className="mt-3 inline-block rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
-          >
-            Proceed to Checkout
-          </Link>
+          <div className="mt-6 flex items-center justify-between border-t border-slate-100 pt-4">
+            <p className="text-lg font-bold text-slate-900">
+              Total: <span className="text-blue-700">PKR {total.toFixed(0)}</span>
+            </p>
+            <Link
+              to="/checkout"
+              className="rounded-md bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition-all duration-300 hover:-translate-y-0.5 hover:bg-blue-700 hover:shadow-md"
+            >
+              Proceed to Checkout →
+            </Link>
+          </div>
         </>
       )}
-    </section>
+      </section>
+    </PageFrame>
   )
 }
 

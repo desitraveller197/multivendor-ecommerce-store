@@ -25,9 +25,12 @@ const orderSchema = new mongoose.Schema(
     },
     paymentMethod: {
       type: String,
-      enum: ['JazzCash', 'Easypaisa', 'COD', 'Stripe'], // Stripe kept for legacy orders
-      default: 'JazzCash',
+      enum: ['Easypaisa', 'COD', 'JazzCash', 'Stripe'], // JazzCash/Stripe kept for legacy orders
+      default: 'Easypaisa',
     },
+    // Non-sensitive card record only (never the full PAN or CVV).
+    cardBrand: { type: String, default: '' },
+    cardLast4: { type: String, default: '' },
     paymentResult: {
       id: String,
       status: String,

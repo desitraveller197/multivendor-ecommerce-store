@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import InvoiceDownloadBtn from '../../components/InvoiceDownloadBtn'
 import StarRating from '../../components/StarRating'
+import PageFrame from '../../components/PageFrame'
 import axiosInstance from '../../api/axiosConfig'
 import { USE_MOCK, delay } from '../../api/mockApi'
 
@@ -62,9 +63,8 @@ function OrderDetail() {
   }
 
   return (
-    <section className="rounded-lg bg-white p-6 shadow-sm">
-      <h1 className="text-2xl font-bold text-slate-900">Order Detail</h1>
-      
+    <PageFrame title="Order Detail" description="Full details and shipping status for your order.">
+      <section className="rounded-lg bg-white p-6 shadow-sm">
       {error && (
         <div className="mt-4 rounded bg-red-50 p-3 text-sm text-red-700 border border-red-200">
           {error}
@@ -213,7 +213,8 @@ function OrderDetail() {
           </div>
         </div>
       ) : null}
-    </section>
+      </section>
+    </PageFrame>
   )
 }
 

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useDispatch } from 'react-redux'
 import Sidebar from '../../components/Sidebar'
+import PageFrame from '../../components/PageFrame'
 import ConfirmModal from '../../components/ConfirmModal'
 import axiosInstance from '../../api/axiosConfig'
 import { USE_MOCK, delay } from '../../api/mockApi'
@@ -175,15 +176,13 @@ function ManageDiscounts() {
     'mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none'
 
   return (
-    <section className="grid gap-4 md:grid-cols-[240px_1fr]">
-      <Sidebar role="seller" />
-      <div className="space-y-4">
+    <PageFrame title="Manage Discounts" description="Apply a discount to a specific product, an entire category, or every product in your shop.">
+      <div className="grid gap-4 md:grid-cols-[240px_1fr]">
+        <Sidebar role="seller" />
+        <div className="space-y-4">
         {/* ─── Create discount ─── */}
         <div className="rounded-lg bg-white p-6 shadow-sm">
-          <h1 className="text-2xl font-bold text-slate-900">Manage Discounts</h1>
-          <p className="mt-1 text-sm text-slate-500">
-            Apply a discount to a specific product, an entire category, or every product in your shop.
-          </p>
+          <h2 className="text-lg font-semibold text-slate-900">Create a discount</h2>
 
           {error && (
             <div className="mt-4 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
@@ -346,7 +345,8 @@ function ManageDiscounts() {
         onCancel={() => setDeleteTarget(null)}
         onConfirm={handleConfirmDelete}
       />
-    </section>
+      </div>
+    </PageFrame>
   )
 }
 

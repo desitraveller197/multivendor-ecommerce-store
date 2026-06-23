@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useDispatch } from 'react-redux'
 import Sidebar from '../../components/Sidebar'
+import PageFrame from '../../components/PageFrame'
 import ConfirmModal from '../../components/ConfirmModal'
 import axiosInstance from '../../api/axiosConfig'
 import { USE_MOCK, delay } from '../../api/mockApi'
@@ -17,7 +18,7 @@ function Products() {
   const [productToDelete, setProductToDelete] = useState(null)
 
   useEffect(() => {
-    const fetchProducts = async () => {
+    const fetchProductsData = async () => {
       try {
         if (USE_MOCK) {
           await delay(600)
@@ -38,7 +39,7 @@ function Products() {
         setLoading(false)
       }
     }
-    fetchProducts()
+    fetchProductsData()
   }, [])
 
   const handleDeleteClick = (product) => {
@@ -68,18 +69,22 @@ function Products() {
   }
 
   return (
-    <section className="grid gap-4 md:grid-cols-[240px_1fr]">
-      <Sidebar role="seller" />
-      <div className="rounded-lg bg-white p-6 shadow-sm">
+    <PageFrame title="My Products" description="Manage your catalog — add, edit, or remove the products in your shop.">
+      <div className="grid gap-4 md:grid-cols-[240px_1fr]">
+        <Sidebar role="seller" />
+        <div className="rounded-lg bg-white p-6 shadow-sm">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-slate-900">My Products</h1>
-          <Link to="/seller/products/add" className="rounded bg-blue-600 px-3 py-2 text-sm text-white">
-            Add Product
+          <h2 className="text-lg font-semibold text-slate-900">Products</h2>
+          <Link
+            to="/seller/products/add"
+            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-all duration-300 hover:-translate-y-0.5 hover:bg-blue-700 hover:shadow-md"
+          >
+            + Add Product
           </Link>
         </div>
 
         {error && (
-          <div className="mt-4 rounded bg-red-50 p-3 text-sm text-red-700 border border-red-200">
+          <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
             {error}
           </div>
         )}
@@ -87,27 +92,34 @@ function Products() {
         <div className="mt-4 space-y-2">
           {loading ? (
             <>
-              <div className="h-12 animate-pulse rounded border border-slate-200 bg-slate-100" />
-              <div className="h-12 animate-pulse rounded border border-slate-200 bg-slate-100" />
-              <div className="h-12 animate-pulse rounded border border-slate-200 bg-slate-100" />
+              <div className="h-14 animate-pulse rounded-lg border border-slate-200 bg-slate-100" />
+              <div className="h-14 animate-pulse rounded-lg border border-slate-200 bg-slate-100" />
+              <div className="h-14 animate-pulse rounded-lg border border-slate-200 bg-slate-100" />
             </>
           ) : (
             products.map((product) => (
               <div
                 key={product.id}
-                className="grid grid-cols-4 items-center gap-2 rounded border border-slate-200 p-3"
+                className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 p-3 transition-all duration-200 hover:border-slate-300 hover:shadow-sm"
               >
-                <span>{product.name}</span>
-                <span>PKR {product.discountPrice || product.price}</span>
-                <Link to={`/seller/products/edit/${product.id}`} className="text-sm text-blue-700">
-                  Edit
-                </Link>
-                <button
-                  className="rounded bg-red-500 px-2 py-1 text-sm text-white"
-                  onClick={() => handleDeleteClick(product)}
-                >
-                  Delete
-                </button>
+                <div>
+                  <p className="font-semibold text-slate-900">{product.name}</p>
+                  <p className="text-sm font-bold text-blue-700">PKR {product.discountPrice || product.price}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Link
+                    to={`/seller/products/edit/${product.id}`}
+                    className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-semibold text-slate-700 transition-all duration-200 hover:-translate-y-0.5 hover:bg-slate-50 hover:shadow-sm"
+                  >
+                    Edit
+                  </Link>
+                  <button
+                    className="rounded-md bg-red-500 px-3 py-1.5 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-red-600 hover:shadow-sm"
+                    onClick={() => handleDeleteClick(product)}
+                  >
+                    Delete
+                  </button>
+                </div>
               </div>
             ))
           )}
@@ -124,7 +136,8 @@ function Products() {
         }}
         onConfirm={handleConfirmDelete}
       />
-    </section>
+      </div>
+    </PageFrame>
   )
 }
 

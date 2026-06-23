@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import Sidebar from '../../components/Sidebar'
+import PageFrame from '../../components/PageFrame'
 import axiosInstance from '../../api/axiosConfig'
 import { USE_MOCK, delay } from '../../api/mockApi'
 
@@ -57,12 +58,13 @@ function MyShop() {
     }
   }
 
+  const inputClass = 'w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 disabled:bg-slate-50 disabled:text-slate-400'
+
   return (
-    <section className="grid gap-4 md:grid-cols-[240px_1fr]">
-      <Sidebar role="seller" />
-      <div className="rounded-lg bg-white p-6 shadow-sm">
-        <h1 className="text-2xl font-bold text-slate-900">My Shop</h1>
-        
+    <PageFrame title="My Shop" description="Update your shop name, description, and logo shown to customers.">
+      <div className="grid gap-4 md:grid-cols-[240px_1fr]">
+        <Sidebar role="seller" />
+        <div className="rounded-lg bg-white p-6 shadow-sm">
         {loading ? (
           <div className="mt-4 grid gap-3">
             <div className="h-10 animate-pulse rounded bg-slate-100" />
@@ -72,40 +74,63 @@ function MyShop() {
           </div>
         ) : (
           <>
-            <div className="mt-4 grid gap-3">
-              <input
-                className="rounded border border-slate-300 px-3 py-2"
-                value={shop?.name || ''}
-                onChange={(event) => setShop((prev) => ({ ...prev, name: event.target.value }))}
-              />
-              <textarea
-                className="rounded border border-slate-300 px-3 py-2"
-                value={shop?.description || ''}
-                onChange={(event) => setShop((prev) => ({ ...prev, description: event.target.value }))}
-              />
-              <input
-                className="rounded border border-slate-300 px-3 py-2"
-                value={shop?.logo || ''}
-                onChange={(event) => setShop((prev) => ({ ...prev, logo: event.target.value }))}
-              />
+            <div className="mt-4 grid gap-4">
+              <div className="flex flex-col gap-1">
+                <label className="text-sm font-medium text-slate-700">Shop Name</label>
+                <input
+                  className={inputClass}
+                  value={shop?.name || ''}
+                  onChange={(event) => setShop((prev) => ({ ...prev, name: event.target.value }))}
+                  placeholder="Shop Name"
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-sm font-medium text-slate-700">Description</label>
+                <textarea
+                  className={inputClass}
+                  rows={3}
+                  value={shop?.description || ''}
+                  onChange={(event) => setShop((prev) => ({ ...prev, description: event.target.value }))}
+                  placeholder="Tell customers about your shop…"
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-sm font-medium text-slate-700">Logo URL</label>
+                <input
+                  className={inputClass}
+                  value={shop?.logo || ''}
+                  onChange={(event) => setShop((prev) => ({ ...prev, logo: event.target.value }))}
+                  placeholder="https://…"
+                />
+              </div>
               {shop?.logo && (
-                <img src={shop.logo} alt="Shop logo preview" className="h-24 w-24 rounded object-cover" />
+                <img
+                  src={shop.logo}
+                  alt="Shop logo preview"
+                  className="h-24 w-24 rounded-lg object-cover shadow-sm ring-1 ring-slate-200"
+                />
               )}
             </div>
-            <button 
+            <button
               onClick={handleSave}
               disabled={saving}
-              className="mt-4 rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+              className="mt-4 rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-all duration-300 hover:-translate-y-0.5 hover:bg-blue-700 hover:shadow-md focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70"
             >
-              {saving ? 'Saving...' : 'Save Changes'}
+              {saving ? (
+                <span className="inline-flex items-center gap-2">
+                  <span className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                  Saving…
+                </span>
+              ) : 'Save Changes'}
             </button>
             
-            {successMsg && <p className="mt-2 text-sm font-medium text-green-600">{successMsg}</p>}
-            {errorMsg && <p className="mt-2 text-sm font-medium text-red-600">{errorMsg}</p>}
+            {successMsg && <p className="mt-2 text-sm text-green-700">{successMsg}</p>}
+            {errorMsg && <p className="mt-2 text-sm text-red-500">{errorMsg}</p>}
           </>
         )}
+        </div>
       </div>
-    </section>
+    </PageFrame>
   )
 }
 

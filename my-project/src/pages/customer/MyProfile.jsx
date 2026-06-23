@@ -3,6 +3,7 @@ import { useDispatch } from 'react-redux'
 import axiosInstance from '../../api/axiosConfig'
 import { USE_MOCK, delay } from '../../api/mockApi'
 import { updateUser } from '../../store/authSlice'
+import PageFrame from '../../components/PageFrame'
 
 function MyProfile() {
   const dispatch = useDispatch()
@@ -103,10 +104,11 @@ function MyProfile() {
     }
   }
 
+  const inputClass = 'w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 disabled:bg-slate-50 disabled:text-slate-400'
+
   return (
-    <section className="rounded-lg bg-white p-6 shadow-sm">
-      <h1 className="text-2xl font-bold text-slate-900">My Profile</h1>
-      
+    <PageFrame title="My Profile" description="Manage your account details and password.">
+      <section className="rounded-lg bg-white p-6 shadow-sm">
       {loading ? (
         <div className="mt-4 grid gap-3 md:grid-cols-2">
           <div className="h-10 animate-pulse rounded bg-slate-100" />
@@ -117,40 +119,57 @@ function MyProfile() {
       ) : (
         <>
           <div className="mt-4 grid gap-3 md:grid-cols-2">
-            <input
-              className="rounded border border-slate-300 px-3 py-2"
-              value={profile.name}
-              onChange={(e) => setProfile(prev => ({ ...prev, name: e.target.value }))}
-              placeholder="Name"
-            />
-            <input
-              className="rounded border border-slate-300 px-3 py-2"
-              value={profile.email}
-              onChange={(e) => setProfile(prev => ({ ...prev, email: e.target.value }))}
-              placeholder="Email"
-            />
-            <input 
-              className="rounded border border-slate-300 px-3 py-2" 
-              value={profile.phone}
-              onChange={(e) => setProfile(prev => ({ ...prev, phone: e.target.value }))}
-              placeholder="Phone" 
-            />
-            <input 
-              className="rounded border border-slate-300 px-3 py-2" 
-              value={profile.city}
-              onChange={(e) => setProfile(prev => ({ ...prev, city: e.target.value }))}
-              placeholder="City" 
-            />
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-medium text-slate-700">Name</label>
+              <input
+                className={inputClass}
+                value={profile.name}
+                onChange={(e) => setProfile(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="Name"
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-medium text-slate-700">Email</label>
+              <input
+                className={inputClass}
+                value={profile.email}
+                onChange={(e) => setProfile(prev => ({ ...prev, email: e.target.value }))}
+                placeholder="Email"
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-medium text-slate-700">Phone</label>
+              <input
+                className={inputClass}
+                value={profile.phone}
+                onChange={(e) => setProfile(prev => ({ ...prev, phone: e.target.value }))}
+                placeholder="Phone"
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-medium text-slate-700">City</label>
+              <input
+                className={inputClass}
+                value={profile.city}
+                onChange={(e) => setProfile(prev => ({ ...prev, city: e.target.value }))}
+                placeholder="City"
+              />
+            </div>
           </div>
-          <button 
+          <button
             onClick={handleProfileSave}
             disabled={saving}
-            className="mt-4 rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+            className="mt-4 rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-all duration-300 hover:-translate-y-0.5 hover:bg-blue-700 hover:shadow-md focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70"
           >
-            {saving ? 'Saving...' : 'Save Changes'}
+            {saving ? (
+              <span className="inline-flex items-center gap-2">
+                <span className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                Saving…
+              </span>
+            ) : 'Save Changes'}
           </button>
-          {profileSuccess && <p className="mt-2 text-sm font-medium text-green-600">{profileSuccess}</p>}
-          {profileError && <p className="mt-2 text-sm font-medium text-red-600">{profileError}</p>}
+          {profileSuccess && <p className="mt-2 text-sm text-green-700">{profileSuccess}</p>}
+          {profileError && <p className="mt-2 text-sm text-red-500">{profileError}</p>}
         </>
       )}
 
@@ -158,39 +177,54 @@ function MyProfile() {
 
       <h2 className="text-xl font-bold text-slate-900">Change Password</h2>
       <div className="mt-4 grid gap-3 md:grid-cols-2">
-        <input
-          type="password"
-          className="col-span-full rounded border border-slate-300 px-3 py-2 md:col-span-1"
-          placeholder="Current Password"
-          value={passwords.currentPassword}
-          onChange={(e) => setPasswords(prev => ({ ...prev, currentPassword: e.target.value }))}
-        />
-        <div className="hidden md:block"></div>
-        <input
-          type="password"
-          className="rounded border border-slate-300 px-3 py-2"
-          placeholder="New Password"
-          value={passwords.newPassword}
-          onChange={(e) => setPasswords(prev => ({ ...prev, newPassword: e.target.value }))}
-        />
-        <input
-          type="password"
-          className="rounded border border-slate-300 px-3 py-2"
-          placeholder="Confirm New Password"
-          value={passwords.confirmPassword}
-          onChange={(e) => setPasswords(prev => ({ ...prev, confirmPassword: e.target.value }))}
-        />
+        <div className="col-span-full flex flex-col gap-1 md:col-span-1">
+          <label className="text-sm font-medium text-slate-700">Current Password</label>
+          <input
+            type="password"
+            className={inputClass}
+            placeholder="Current Password"
+            value={passwords.currentPassword}
+            onChange={(e) => setPasswords(prev => ({ ...prev, currentPassword: e.target.value }))}
+          />
+        </div>
+        <div className="hidden md:block" />
+        <div className="flex flex-col gap-1">
+          <label className="text-sm font-medium text-slate-700">New Password</label>
+          <input
+            type="password"
+            className={inputClass}
+            placeholder="New Password"
+            value={passwords.newPassword}
+            onChange={(e) => setPasswords(prev => ({ ...prev, newPassword: e.target.value }))}
+          />
+        </div>
+        <div className="flex flex-col gap-1">
+          <label className="text-sm font-medium text-slate-700">Confirm New Password</label>
+          <input
+            type="password"
+            className={inputClass}
+            placeholder="Confirm New Password"
+            value={passwords.confirmPassword}
+            onChange={(e) => setPasswords(prev => ({ ...prev, confirmPassword: e.target.value }))}
+          />
+        </div>
       </div>
-      <button 
+      <button
         onClick={handlePasswordUpdate}
         disabled={passwordLoading}
-        className="mt-4 rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+        className="mt-4 rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-all duration-300 hover:-translate-y-0.5 hover:bg-blue-700 hover:shadow-md focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70"
       >
-        {passwordLoading ? 'Updating...' : 'Update Password'}
+        {passwordLoading ? (
+          <span className="inline-flex items-center gap-2">
+            <span className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
+            Updating…
+          </span>
+        ) : 'Update Password'}
       </button>
-      {passwordSuccess && <p className="mt-2 text-sm font-medium text-green-600">{passwordSuccess}</p>}
-      {passwordError && <p className="mt-2 text-sm font-medium text-red-600">{passwordError}</p>}
-    </section>
+      {passwordSuccess && <p className="mt-2 text-sm text-green-700">{passwordSuccess}</p>}
+      {passwordError && <p className="mt-2 text-sm text-red-500">{passwordError}</p>}
+      </section>
+    </PageFrame>
   )
 }
 

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useDispatch } from 'react-redux'
 import Sidebar from '../../components/Sidebar'
+import PageFrame from '../../components/PageFrame'
 import SizeSelector from '../../components/SizeSelector'
 import axiosInstance from '../../api/axiosConfig'
 import { USE_MOCK, delay } from '../../api/mockApi'
@@ -71,11 +72,10 @@ function EditProduct() {
   }
 
   return (
-    <section className="grid gap-4 md:grid-cols-[240px_1fr]">
-      <Sidebar role="seller" />
-      <div className="rounded-lg bg-white p-6 shadow-sm">
-        <h1 className="text-2xl font-bold text-slate-900">Edit Product</h1>
-        
+    <PageFrame title="Edit Product" description="Update your product's details, price, region, and available sizes.">
+      <div className="grid gap-4 md:grid-cols-[240px_1fr]">
+        <Sidebar role="seller" />
+        <div className="rounded-lg bg-white p-6 shadow-sm">
         {loading ? (
           <div className="mt-4 grid gap-3 md:grid-cols-2">
             <div className="h-10 animate-pulse rounded bg-slate-100" />
@@ -95,7 +95,7 @@ function EditProduct() {
                 <input
                   required
                   value={form.name || ''}
-                  className="w-full rounded border border-slate-300 px-3 py-2 text-slate-900 focus:border-blue-500 focus:outline-none"
+              className="w-full rounded border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                   onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
                 />
               </div>
@@ -107,7 +107,7 @@ function EditProduct() {
                 <input
                   required
                   value={form.category || ''}
-                  className="w-full rounded border border-slate-300 px-3 py-2 text-slate-900 focus:border-blue-500 focus:outline-none"
+              className="w-full rounded border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                   onChange={(event) => setForm((prev) => ({ ...prev, category: event.target.value }))}
                 />
               </div>
@@ -118,7 +118,7 @@ function EditProduct() {
                 </label>
                 <select
                   value={form.region || ''}
-                  className="w-full rounded border border-slate-300 px-3 py-2 text-slate-900 focus:border-blue-500 focus:outline-none"
+              className="w-full rounded border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                   onChange={(event) => setForm((prev) => ({ ...prev, region: event.target.value }))}
                 >
                   <option value="">Select region…</option>
@@ -138,7 +138,7 @@ function EditProduct() {
                   required
                   type="number"
                   value={form.price || 0}
-                  className="w-full rounded border border-slate-300 px-3 py-2 text-slate-900 focus:border-blue-500 focus:outline-none"
+              className="w-full rounded border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                   onChange={(event) => setForm((prev) => ({ ...prev, price: Number(event.target.value) }))}
                 />
               </div>
@@ -150,7 +150,7 @@ function EditProduct() {
                 <input
                   type="number"
                   value={form.discountPrice || 0}
-                  className="w-full rounded border border-slate-300 px-3 py-2 text-slate-900 focus:border-blue-500 focus:outline-none"
+              className="w-full rounded border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                   onChange={(event) =>
                     setForm((prev) => ({ ...prev, discountPrice: Number(event.target.value) }))
                   }
@@ -198,16 +198,21 @@ function EditProduct() {
             {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
             
             <div className="flex gap-3 pt-2">
-              <button 
+              <button
                 type="submit"
                 disabled={submitting}
-                className="rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+                className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-all duration-300 hover:-translate-y-0.5 hover:bg-blue-700 hover:shadow-md focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70"
               >
-                {submitting ? 'Saving...' : 'Save Changes'}
+                {submitting ? (
+                  <span className="inline-flex items-center gap-2">
+                    <span className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                    Saving…
+                  </span>
+                ) : 'Save Changes'}
               </button>
               <button
                 type="button"
-                className="rounded border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                className="rounded-md border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition-all duration-200 hover:-translate-y-0.5 hover:bg-slate-50 hover:shadow-sm"
                 onClick={() => navigate('/seller/products')}
               >
                 Cancel
@@ -215,8 +220,9 @@ function EditProduct() {
             </div>
           </form>
         )}
+        </div>
       </div>
-    </section>
+    </PageFrame>
   )
 }
 

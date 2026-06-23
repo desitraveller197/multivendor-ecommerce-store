@@ -125,7 +125,7 @@ function ProductDetail() {
 
           <div className="mt-6 flex items-center gap-3">
             <button
-              className="rounded-md bg-blue-600 px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
+              className="rounded-md bg-blue-600 px-5 py-2 text-sm font-semibold text-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:bg-blue-700 hover:shadow-md"
               onClick={() => dispatch(addToCart({ ...product, selectedSize, quantity }))}
             >
               Add to Cart

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import Sidebar from '../../components/Sidebar'
+import PageFrame from '../../components/PageFrame'
 import axiosInstance from '../../api/axiosConfig'
 import { USE_MOCK, delay } from '../../api/mockApi'
 
@@ -58,23 +59,22 @@ function SellerOrders() {
 
   const getBadgeClass = (statusStr) => {
     switch (String(statusStr).toLowerCase()) {
-      case 'delivered': return 'bg-green-100 text-green-800'
+      case 'delivered': return 'bg-green-100 text-green-700'
       case 'pending': return 'bg-yellow-100 text-yellow-800'
       case 'processing': return 'bg-blue-100 text-blue-800'
-      case 'shipped': return 'bg-purple-100 text-purple-800'
-      case 'cancelled': return 'bg-red-100 text-red-800'
+      case 'shipped': return 'bg-indigo-100 text-indigo-800'
+      case 'cancelled': return 'bg-red-100 text-red-700'
       default: return 'bg-slate-100 text-slate-800'
     }
   }
 
   return (
-    <section className="grid gap-4 md:grid-cols-[240px_1fr]">
-      <Sidebar role="seller" />
-      <div className="rounded-lg bg-white p-6 shadow-sm">
-        <h1 className="text-2xl font-bold text-slate-900">Seller Orders</h1>
-        
+    <PageFrame title="Seller Orders" description="View orders containing your products and update their status.">
+      <div className="grid gap-4 md:grid-cols-[240px_1fr]">
+        <Sidebar role="seller" />
+        <div className="rounded-lg bg-white p-6 shadow-sm">
         {error && (
-          <div className="mt-4 rounded bg-red-50 p-3 text-sm text-red-700 border border-red-200">
+          <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
             {error}
           </div>
         )}
@@ -82,45 +82,50 @@ function SellerOrders() {
         <div className="mt-4 space-y-2">
           {loading ? (
             <>
-              <div className="h-12 animate-pulse rounded border border-slate-200 bg-slate-100" />
-              <div className="h-12 animate-pulse rounded border border-slate-200 bg-slate-100" />
-              <div className="h-12 animate-pulse rounded border border-slate-200 bg-slate-100" />
+              <div className="h-14 animate-pulse rounded-lg border border-slate-200 bg-slate-100" />
+              <div className="h-14 animate-pulse rounded-lg border border-slate-200 bg-slate-100" />
+              <div className="h-14 animate-pulse rounded-lg border border-slate-200 bg-slate-100" />
             </>
           ) : (
             orders.map((order) => (
               <div
                 key={order.id}
-                className="grid grid-cols-5 items-center gap-2 rounded border border-slate-200 p-3 text-sm"
+                className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 p-3 text-sm transition-all duration-200 hover:border-slate-300 hover:shadow-sm"
               >
-                <span>{order.id}</span>
-                <span>PKR {order.amount}</span>
-                <span>{order.customer}</span>
-                <span className={`w-fit rounded px-2 py-0.5 text-xs font-medium capitalize ${getBadgeClass(order.status)}`}>
-                  {order.status}
-                </span>
-                <div className="flex items-center gap-2">
-                  <select
-                    value={order.status}
-                    className="rounded border border-slate-300 px-2 py-1 outline-none focus:border-blue-500"
-                    onChange={(event) => handleStatusChange(order.id, event.target.value)}
-                    disabled={updatingId === order.id}
-                  >
-                    <option value="Pending">Pending</option>
-                    <option value="Processing">Processing</option>
-                    <option value="Shipped">Shipped</option>
-                    <option value="Delivered">Delivered</option>
-                    <option value="Cancelled">Cancelled</option>
-                  </select>
-                  {updatingId === order.id && (
-                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-blue-600"></div>
-                  )}
+                <div>
+                  <p className="font-semibold text-slate-900">{order.id}</p>
+                  <p className="text-slate-500">{order.customer}</p>
+                  <p className="font-bold text-blue-700">PKR {order.amount}</p>
+                </div>
+                <div className="flex flex-wrap items-center gap-3">
+                  <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${getBadgeClass(order.status)}`}>
+                    {order.status}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={order.status}
+                      className="rounded border border-slate-300 px-2 py-1.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 disabled:bg-slate-50 disabled:text-slate-400"
+                      onChange={(event) => handleStatusChange(order.id, event.target.value)}
+                      disabled={updatingId === order.id}
+                    >
+                      <option value="Pending">Pending</option>
+                      <option value="Processing">Processing</option>
+                      <option value="Shipped">Shipped</option>
+                      <option value="Delivered">Delivered</option>
+                      <option value="Cancelled">Cancelled</option>
+                    </select>
+                    {updatingId === order.id && (
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-blue-600" />
+                    )}
+                  </div>
                 </div>
               </div>
             ))
           )}
         </div>
+        </div>
       </div>
-    </section>
+    </PageFrame>
   )
 }
 

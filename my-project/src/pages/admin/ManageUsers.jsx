@@ -3,6 +3,7 @@ import axiosInstance from '../../api/axiosConfig'
 import { USE_MOCK, delay } from '../../api/mockApi'
 import ConfirmModal from '../../components/ConfirmModal'
 import Sidebar from '../../components/Sidebar'
+import PageFrame from '../../components/PageFrame'
 
 const fetchUsers = async () => {
   if (USE_MOCK) {
@@ -82,40 +83,52 @@ function ManageUsers() {
     }
   }
 
+  const roleBadge = (role) => {
+    const map = {
+      admin: 'bg-indigo-100 text-indigo-700',
+      seller: 'bg-blue-100 text-blue-700',
+      customer: 'bg-slate-100 text-slate-700',
+    }
+    return map[role] || 'bg-slate-100 text-slate-700'
+  }
+
   return (
-    <section className="grid gap-4 md:grid-cols-[240px_1fr]">
-      <Sidebar role="admin" />
-      <div className="rounded-lg bg-white p-6 shadow-sm">
-        <h1 className="text-2xl font-bold text-slate-900">Manage Users</h1>
+    <PageFrame title="Manage Users" description="Search platform users and remove accounts when needed.">
+      <div className="grid gap-4 md:grid-cols-[240px_1fr]">
+        <Sidebar role="admin" />
+        <div className="rounded-lg bg-white p-6 shadow-sm">
         <input
-          className="mt-4 w-full rounded border border-slate-300 px-3 py-2 md:w-1/2 outline-none focus:border-blue-500"
-          placeholder="Search user..."
+          className="w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 md:w-1/2"
+          placeholder="Search by name or email…"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
         />
         <div className="mt-4 space-y-2">
           {state.loading ? (
             <>
-              <div className="h-10 animate-pulse rounded bg-slate-100" />
-              <div className="h-10 animate-pulse rounded bg-slate-100" />
-              <div className="h-10 animate-pulse rounded bg-slate-100" />
-              <div className="h-10 animate-pulse rounded bg-slate-100" />
+              <div className="h-14 animate-pulse rounded-lg bg-slate-100" />
+              <div className="h-14 animate-pulse rounded-lg bg-slate-100" />
+              <div className="h-14 animate-pulse rounded-lg bg-slate-100" />
+              <div className="h-14 animate-pulse rounded-lg bg-slate-100" />
             </>
           ) : state.error ? (
-            <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">{state.error}</div>
+            <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">{state.error}</div>
           ) : (
             filtered.map((user) => (
-              <div key={user.id} className="flex items-center justify-between rounded border border-slate-200 p-3">
+              <div
+                key={user.id}
+                className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 p-3 transition-all duration-200 hover:border-slate-300 hover:shadow-sm"
+              >
                 <div>
-                  <p className="font-medium text-slate-800">{user.name}</p>
+                  <p className="font-semibold text-slate-900">{user.name}</p>
                   <p className="text-sm text-slate-500">{user.email}</p>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="rounded bg-slate-100 px-2 py-1 text-xs uppercase text-slate-700">
+                  <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold uppercase ${roleBadge(user.role)}`}>
                     {user.role}
                   </span>
                   <button
-                    className="rounded bg-red-500 px-3 py-1 text-sm text-white hover:bg-red-600 transition-colors"
+                    className="rounded-md bg-red-500 px-3 py-1.5 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-red-600 hover:shadow-sm"
                     onClick={() => setPendingDeleteUser(user)}
                   >
                     Delete
@@ -125,6 +138,7 @@ function ManageUsers() {
             ))
           )}
         </div>
+        </div>
       </div>
       <ConfirmModal
         open={Boolean(pendingDeleteUser)}
@@ -133,7 +147,7 @@ function ManageUsers() {
         onCancel={() => setPendingDeleteUser(null)}
         onConfirm={confirmDelete}
       />
-    </section>
+    </PageFrame>
   )
 }
 

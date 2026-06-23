@@ -3,6 +3,7 @@ import axiosInstance from '../../api/axiosConfig'
 import { USE_MOCK, delay } from '../../api/mockApi'
 import Modal from '../../components/Modal'
 import Sidebar from '../../components/Sidebar'
+import PageFrame from '../../components/PageFrame'
 
 function ManageSellers() {
   const [sellers, setSellers] = useState([])
@@ -99,37 +100,41 @@ function ManageSellers() {
   }
 
   return (
-    <section className="grid gap-4 md:grid-cols-[240px_1fr]">
-      <Sidebar role="admin" />
-      <div className="rounded-lg bg-white p-6 shadow-sm">
-        <h1 className="text-2xl font-bold text-slate-900">Manage Sellers</h1>
-        <div className="mt-4 space-y-3">
+    <PageFrame title="Manage Sellers" description="Review and approve or reject seller applications.">
+      <div className="grid gap-4 md:grid-cols-[240px_1fr]">
+        <Sidebar role="admin" />
+        <div className="rounded-lg bg-white p-6 shadow-sm">
+        <div className="mt-1 space-y-3">
           {fetchState.loading ? (
             <>
-              <div className="h-12 animate-pulse rounded bg-slate-100" />
-              <div className="h-12 animate-pulse rounded bg-slate-100" />
-              <div className="h-12 animate-pulse rounded bg-slate-100" />
+              <div className="h-14 animate-pulse rounded-lg bg-slate-100" />
+              <div className="h-14 animate-pulse rounded-lg bg-slate-100" />
+              <div className="h-14 animate-pulse rounded-lg bg-slate-100" />
             </>
           ) : fetchState.error ? (
-            <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+            <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
               {fetchState.error}
             </div>
           ) : (
             sellers.map((seller) => (
-              <div key={seller.id} className="flex flex-wrap items-center justify-between rounded border p-3">
+              <div
+                key={seller.id}
+                className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 p-4 transition-all duration-200 hover:border-slate-300 hover:shadow-sm"
+              >
                 <div>
-                  <p className="font-medium text-slate-800">{seller.name}</p>
+                  <p className="font-semibold text-slate-900">{seller.name}</p>
                   <p className="text-sm text-slate-500">{seller.email}</p>
+                  {seller.shop && <p className="text-xs text-slate-400">{seller.shop}</p>}
                 </div>
                 <div className="flex gap-2">
                   <button
-                    className="rounded bg-emerald-600 px-3 py-1 text-sm text-white hover:bg-emerald-700 transition-colors"
+                    className="rounded-md bg-green-100 px-3 py-1.5 text-sm font-semibold text-green-700 transition-all duration-200 hover:-translate-y-0.5 hover:bg-green-200 hover:shadow-sm"
                     onClick={() => openConfirm(seller, 'approve')}
                   >
                     Approve
                   </button>
                   <button
-                    className="rounded bg-red-500 px-3 py-1 text-sm text-white hover:bg-red-600 transition-colors"
+                    className="rounded-md bg-red-500 px-3 py-1.5 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-red-600 hover:shadow-sm"
                     onClick={() => openConfirm(seller, 'reject')}
                   >
                     Reject
@@ -138,6 +143,7 @@ function ManageSellers() {
               </div>
             ))
           )}
+        </div>
         </div>
       </div>
       <Modal
@@ -149,7 +155,7 @@ function ManageSellers() {
         confirmText="Confirm"
         isConfirmLoading={isActionLoading}
       />
-    </section>
+    </PageFrame>
   )
 }
 

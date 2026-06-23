@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useDispatch } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
 import Sidebar from '../../components/Sidebar'
+import PageFrame from '../../components/PageFrame'
 import SizeSelector from '../../components/SizeSelector'
 import { addProduct, fetchProducts } from '../../store/productSlice'
 import axiosInstance from '../../api/axiosConfig'
@@ -80,62 +81,80 @@ function AddProduct() {
   }
 
   return (
-    <section className="grid gap-4 md:grid-cols-[240px_1fr]">
-      <Sidebar role="seller" />
-      <form onSubmit={handleSubmit} className="rounded-lg bg-white p-6 shadow-sm">
-        <h1 className="text-2xl font-bold text-slate-900">Add Product</h1>
-        <div className="mt-4 grid gap-3 md:grid-cols-2">
-          <input
-            required
-            placeholder="Name"
-            className="rounded border border-slate-300 px-3 py-2"
-            onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
-          />
-          <input
-            required
-            placeholder="Category"
-            className="rounded border border-slate-300 px-3 py-2"
-            onChange={(event) => setForm((prev) => ({ ...prev, category: event.target.value }))}
-          />
-          <select
-            required
-            value={form.region}
-            className="rounded border border-slate-300 px-3 py-2 text-slate-900"
-            onChange={(event) => setForm((prev) => ({ ...prev, region: event.target.value }))}
-          >
-            <option value="">Select region…</option>
-            {REGION_OPTIONS.map((region) => (
-              <option key={region} value={region}>
-                {region}
-              </option>
-            ))}
-          </select>
-          <input
-            required
-            type="number"
-            placeholder="Price"
-            className="rounded border border-slate-300 px-3 py-2"
-            onChange={(event) => setForm((prev) => ({ ...prev, price: Number(event.target.value) }))}
-          />
-          <input
-            required
-            type="number"
-            placeholder="Discount Price"
-            className="rounded border border-slate-300 px-3 py-2"
-            onChange={(event) =>
-              setForm((prev) => ({ ...prev, discountPrice: Number(event.target.value) }))
-            }
-          />
-          <input
-            required
-            type="number"
-            placeholder="Stock"
-            className="rounded border border-slate-300 px-3 py-2"
-            onChange={(event) => setForm((prev) => ({ ...prev, stock: Number(event.target.value) }))}
-          />
+    <PageFrame title="Add Product" description="List a new product in your shop with images, price, region, and sizes.">
+      <div className="grid gap-4 md:grid-cols-[240px_1fr]">
+        <Sidebar role="seller" />
+        <form onSubmit={handleSubmit} className="rounded-lg bg-white p-6 shadow-sm">
+        <div className="mt-1 grid gap-3 md:grid-cols-2">
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-medium text-slate-700">Product Name</label>
+            <input
+              required
+              placeholder="e.g. Embroidered Kameez"
+              className="w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
+            />
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-medium text-slate-700">Category</label>
+            <input
+              required
+              placeholder="e.g. Clothing"
+              className="w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              onChange={(event) => setForm((prev) => ({ ...prev, category: event.target.value }))}
+            />
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-medium text-slate-700">Region</label>
+            <select
+              required
+              value={form.region}
+              className="w-full rounded border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              onChange={(event) => setForm((prev) => ({ ...prev, region: event.target.value }))}
+            >
+              <option value="">Select region…</option>
+              {REGION_OPTIONS.map((region) => (
+                <option key={region} value={region}>
+                  {region}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-medium text-slate-700">Price (PKR)</label>
+            <input
+              required
+              type="number"
+              placeholder="5800"
+              className="w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              onChange={(event) => setForm((prev) => ({ ...prev, price: Number(event.target.value) }))}
+            />
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-medium text-slate-700">Discount Price (PKR)</label>
+            <input
+              required
+              type="number"
+              placeholder="4990"
+              className="w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              onChange={(event) =>
+                setForm((prev) => ({ ...prev, discountPrice: Number(event.target.value) }))
+              }
+            />
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-medium text-slate-700">Stock</label>
+            <input
+              required
+              type="number"
+              placeholder="0"
+              className="w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              onChange={(event) => setForm((prev) => ({ ...prev, stock: Number(event.target.value) }))}
+            />
+          </div>
           
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
+          <div className="col-span-full flex flex-col gap-1">
+            <label className="text-sm font-medium text-slate-700">
               Product Image
             </label>
             <input
@@ -149,20 +168,24 @@ function AddProduct() {
                   setPreviewUrl(URL.createObjectURL(file))
                 }
               }}
-              className="w-full rounded border border-slate-300 px-3 py-2 text-sm"
+              className="w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
             />
             {previewUrl && (
               <img src={previewUrl} alt="Preview"
-                className="mt-2 h-40 w-full rounded border object-contain" />
+                className="mt-2 h-40 w-full rounded-lg border border-slate-200 object-contain" />
             )}
           </div>
 
-          <textarea
-            required
-            placeholder="Description"
-            className="col-span-full rounded border border-slate-300 px-3 py-2"
-            onChange={(event) => setForm((prev) => ({ ...prev, description: event.target.value }))}
-          />
+          <div className="col-span-full flex flex-col gap-1">
+            <label className="text-sm font-medium text-slate-700">Description</label>
+            <textarea
+              required
+              rows={3}
+              placeholder="Describe your product…"
+              className="w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              onChange={(event) => setForm((prev) => ({ ...prev, description: event.target.value }))}
+            />
+          </div>
           <div className="col-span-full">
             <SizeSelector
               selected={form.sizes}
@@ -170,15 +193,21 @@ function AddProduct() {
             />
           </div>
         </div>
-        <button 
+        <button
           disabled={submitting}
-          className="mt-4 rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+          className="mt-4 rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-all duration-300 hover:-translate-y-0.5 hover:bg-blue-700 hover:shadow-md focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70"
         >
-          {submitLabel}
+          {submitting ? (
+            <span className="inline-flex items-center gap-2">
+              <span className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
+              {submitLabel}
+            </span>
+          ) : submitLabel}
         </button>
-        {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
-      </form>
-    </section>
+        {error && <p className="mt-2 text-xs text-red-500">{error}</p>}
+        </form>
+      </div>
+    </PageFrame>
   )
 }
 
