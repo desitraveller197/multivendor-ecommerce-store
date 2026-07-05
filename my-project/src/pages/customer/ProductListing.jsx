@@ -213,6 +213,16 @@ const SUB_TO_MAIN_MAP = {
   'Clothing': 'Clothing',
   'Traditional Clothing': 'Clothing',
   'Shawls & Dupattas': 'Clothing',
+  'Embroidered Phulkari Dupatta': 'Clothing',
+  'Fancy Dupatta Designs': 'Clothing',
+  'Hand Embroidered Organza Dupatta': 'Clothing',
+  'Handmade Applique Dresses': 'Clothing',
+  'Shawls For Men': 'Clothing',
+  'Shawls For Women': 'Clothing',
+  'Shawls for Men & Women': 'Clothing',
+  'Sindhi Ajrak': 'Clothing',
+  'Sindhi Topi': 'Clothing',
+  'Susi (Soosi) Fabric Dresses': 'Clothing',
   'Electronics': 'Electronics',
   'Handicrafts & Decor': 'Home Accessories',
   'Home': 'Home Accessories',
@@ -237,7 +247,19 @@ function ProductListing() {
   const { items, categories } = useSelector((state) => state.products)
   const [searchParams] = useSearchParams()
   const extent = useCatalogPriceExtent(items)
-  const categoryOptions = MAIN_CATEGORIES
+  
+  const categoryOptions = useMemo(() => {
+    const options = [...MAIN_CATEGORIES]
+    const dbCategories = (categories || []).filter(Boolean)
+    const productCategories = [...new Set((items || []).map((item) => item.category).filter(Boolean))]
+    const allKnownCategories = [...new Set([...dbCategories, ...productCategories])]
+    const extraCategories = allKnownCategories.filter((cat) => {
+      const isSub = Object.keys(SUB_TO_MAIN_MAP).includes(cat) && SUB_TO_MAIN_MAP[cat] !== cat
+      const alreadyIncluded = options.includes(cat) || options.includes(SUB_TO_MAIN_MAP[cat])
+      return !isSub && !alreadyIncluded
+    })
+    return [...options, ...extraCategories]
+  }, [categories, items])
 
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState('all')
