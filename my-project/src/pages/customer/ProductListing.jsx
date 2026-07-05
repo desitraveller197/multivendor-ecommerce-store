@@ -201,18 +201,43 @@ function PriceRangeControl({
   )
 }
 
+const MAIN_CATEGORIES = [
+  'Clothing',
+  'Electronics',
+  'Home Accessories',
+  'Fashion',
+  'Local Foods'
+]
+
+const SUB_TO_MAIN_MAP = {
+  'Clothing': 'Clothing',
+  'Traditional Clothing': 'Clothing',
+  'Shawls & Dupattas': 'Clothing',
+  'Electronics': 'Electronics',
+  'Handicrafts & Decor': 'Home Accessories',
+  'Home': 'Home Accessories',
+  'Home Accessories': 'Home Accessories',
+  'Footwear (Chappals)': 'Fashion',
+  'Organic Beauty': 'Fashion',
+  'Beauty': 'Fashion',
+  'Fashion': 'Fashion',
+  'Accessories': 'Fashion',
+  'Jewelry': 'Fashion',
+  'Local Foods': 'Local Foods'
+}
+
+function getMainCategory(subCategory) {
+  if (!subCategory) return 'Fashion'
+  const normalized = String(subCategory).trim()
+  return SUB_TO_MAIN_MAP[normalized] || normalized
+}
+
 function ProductListing() {
   const dispatch = useDispatch()
   const { items, categories } = useSelector((state) => state.products)
   const [searchParams] = useSearchParams()
   const extent = useCatalogPriceExtent(items)
-  const categoryOptions = useMemo(() => {
-    const known = categories.filter(Boolean)
-    const extra = [...new Set(items.map((item) => item.category).filter(Boolean))].filter(
-      (item) => !known.includes(item),
-    )
-    return [...known, ...extra]
-  }, [categories, items])
+  const categoryOptions = MAIN_CATEGORIES
 
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState('all')
@@ -232,7 +257,7 @@ function ProductListing() {
   useEffect(() => {
     const initialCategory = searchParams.get('category')
     if (!initialCategory) return
-    setCategory(initialCategory)
+    setCategory(getMainCategory(initialCategory))
   }, [searchParams])
 
   const clampMin = (v) => {
@@ -253,7 +278,7 @@ function ProductListing() {
 
   const filteredSorted = useMemo(() => {
     const catIndex = (c) => {
-      const i = categories.indexOf(c)
+      const i = MAIN_CATEGORIES.indexOf(getMainCategory(c))
       return i === -1 ? 999 : i
     }
     const list = items.filter((product) => {
@@ -263,7 +288,7 @@ function ProductListing() {
       const matchQuery = `${product.name || ''} ${product.description || ''}`
         .toLowerCase()
         .includes(query.toLowerCase())
-      const matchCategory = category === 'all' || (product.category || '') === category
+      const matchCategory = category === 'all' || getMainCategory(product.category) === category
       const price = getEffectivePrice(product)
       const matchPrice = price >= minPrice && price <= maxPrice
       const matchSize =

@@ -88,4 +88,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { app, server, initSocket };
+module.exports = app;
