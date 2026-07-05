@@ -227,6 +227,7 @@ const SUB_TO_MAIN_MAP = {
   'Electronics': 'Electronics',
   'Handicrafts & Decor': 'Home Accessories',
   'Home': 'Home Accessories',
+  'Home Decor': 'Home Accessories',
   'Home Accessories': 'Home Accessories',
   'Footwear (Chappals)': 'Fashion',
   'Organic Beauty': 'Beauty',
