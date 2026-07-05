@@ -203,6 +203,7 @@ function PriceRangeControl({
 
 const MAIN_CATEGORIES = [
   'Clothing',
+  'Electronics',
   'Home Accessories',
   'Local Foods',
   'Beauty',
@@ -223,7 +224,7 @@ const SUB_TO_MAIN_MAP = {
   'Sindhi Ajrak': 'Clothing',
   'Sindhi Topi': 'Clothing',
   'Susi (Soosi) Fabric Dresses': 'Clothing',
-  'Electronics': 'Home Accessories',
+  'Electronics': 'Electronics',
   'Handicrafts & Decor': 'Home Accessories',
   'Home': 'Home Accessories',
   'Home Accessories': 'Home Accessories',
@@ -254,7 +255,10 @@ function getMainCategory(subCategory) {
   if (lower.includes('beauty') || lower.includes('makeup') || lower.includes('skincare') || lower.includes('cosmetic')) {
     return 'Beauty'
   }
-  if (lower.includes('home') || lower.includes('decor') || lower.includes('handicraft') || lower.includes('craft') || lower.includes('electronic') || lower.includes('appliance') || lower.includes('furniture')) {
+  if (lower.includes('electronic') || lower.includes('appliance') || lower.includes('phone') || lower.includes('laptop') || lower.includes('gadget') || lower.includes('device')) {
+    return 'Electronics'
+  }
+  if (lower.includes('home') || lower.includes('decor') || lower.includes('handicraft') || lower.includes('craft') || lower.includes('furniture')) {
     return 'Home Accessories'
   }
   
@@ -271,7 +275,6 @@ function ProductListing() {
 
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState('all')
-  const [subCategory, setSubCategory] = useState('all')
   const [minPrice, setMinPrice] = useState(extent.min)
   const [maxPrice, setMaxPrice] = useState(extent.max)
   const [selectedSizes, setSelectedSizes] = useState([])
@@ -279,15 +282,6 @@ function ProductListing() {
   const [selectedSeasons, setSelectedSeasons] = useState([])
   const [sortBy, setSortBy] = useState('default')
   const [page, setPage] = useState(1)
-
-  const subCategoryOptions = useMemo(() => {
-    if (category === 'all') return []
-    const rawCategories = items
-      .filter((product) => product.category && getMainCategory(product.category) === category)
-      .map((product) => String(product.category).trim())
-      .filter(Boolean)
-    return [...new Set(rawCategories)]
-  }, [category, items])
 
   useEffect(() => {
     setMinPrice(extent.min)
@@ -297,13 +291,7 @@ function ProductListing() {
   useEffect(() => {
     const initialCategory = searchParams.get('category')
     if (!initialCategory) return
-    const mainCat = getMainCategory(initialCategory)
-    setCategory(mainCat)
-    if (initialCategory !== mainCat) {
-      setSubCategory(initialCategory)
-    } else {
-      setSubCategory('all')
-    }
+    setCategory(getMainCategory(initialCategory))
   }, [searchParams])
 
   const clampMin = (v) => {
@@ -335,10 +323,6 @@ function ProductListing() {
         .toLowerCase()
         .includes(query.toLowerCase())
       const matchCategory = category === 'all' || getMainCategory(product.category) === category
-      const matchSubCategory =
-        subCategory === 'all' ||
-        (product.category &&
-          String(product.category).trim().toLowerCase() === String(subCategory).trim().toLowerCase())
       const price = getEffectivePrice(product)
       const matchPrice = price >= minPrice && price <= maxPrice
       const matchSize =
@@ -348,7 +332,7 @@ function ProductListing() {
       const matchSeason =
         selectedSeasons.length === 0 ||
         selectedSeasons.some((season) => productSeasons.includes(season))
-      return matchQuery && matchCategory && matchSubCategory && matchPrice && matchSize && matchColor && matchSeason
+      return matchQuery && matchCategory && matchPrice && matchSize && matchColor && matchSeason
     })
 
     list.sort((a, b) => {
@@ -380,7 +364,6 @@ function ProductListing() {
   const clearAllFilters = () => {
     setQuery('')
     setCategory('all')
-    setSubCategory('all')
     setSelectedSizes([])
     setSelectedColors([])
     setSelectedSeasons([])
@@ -454,7 +437,6 @@ function ProductListing() {
                 onChange={(event) => {
                   setPage(1)
                   setCategory(event.target.value)
-                  setSubCategory('all')
                 }}
               >
                 <option value="all">All categories</option>
@@ -465,30 +447,6 @@ function ProductListing() {
                 ))}
               </select>
             </div>
-
-            {category !== 'all' && subCategoryOptions.length > 0 && (
-              <div className="mt-4">
-                <label htmlFor="filter-subcategory" className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Sub-Category
-                </label>
-                <select
-                  id="filter-subcategory"
-                  className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm outline-none ring-blue-500/30 focus:border-blue-500 focus:ring-2"
-                  value={subCategory}
-                  onChange={(event) => {
-                    setPage(1)
-                    setSubCategory(event.target.value)
-                  }}
-                >
-                  <option value="all">All sub-categories</option>
-                  {subCategoryOptions.map((item) => (
-                    <option key={item} value={item}>
-                      {item}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
 
             <div className="mt-4">
               <PriceRangeControl
