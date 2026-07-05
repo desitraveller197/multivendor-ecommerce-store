@@ -203,9 +203,10 @@ function PriceRangeControl({
 
 const MAIN_CATEGORIES = [
   'Clothing',
-  'Electronics',
   'Home Accessories',
-  'Local Foods'
+  'Local Foods',
+  'Beauty',
+  'Fashion'
 ]
 
 const SUB_TO_MAIN_MAP = {
@@ -222,23 +223,42 @@ const SUB_TO_MAIN_MAP = {
   'Sindhi Ajrak': 'Clothing',
   'Sindhi Topi': 'Clothing',
   'Susi (Soosi) Fabric Dresses': 'Clothing',
-  'Electronics': 'Electronics',
+  'Electronics': 'Home Accessories',
   'Handicrafts & Decor': 'Home Accessories',
   'Home': 'Home Accessories',
   'Home Accessories': 'Home Accessories',
-  'Footwear (Chappals)': 'Clothing',
-  'Organic Beauty': 'Clothing',
-  'Beauty': 'Clothing',
-  'Fashion': 'Clothing',
-  'Accessories': 'Clothing',
-  'Jewelry': 'Clothing',
+  'Footwear (Chappals)': 'Fashion',
+  'Organic Beauty': 'Beauty',
+  'Beauty': 'Beauty',
+  'Fashion': 'Fashion',
+  'Accessories': 'Fashion',
+  'Jewelry': 'Fashion',
   'Local Foods': 'Local Foods'
 }
 
 function getMainCategory(subCategory) {
   if (!subCategory) return 'Clothing'
   const normalized = String(subCategory).trim()
-  return SUB_TO_MAIN_MAP[normalized] || normalized
+  
+  if (SUB_TO_MAIN_MAP[normalized]) {
+    return SUB_TO_MAIN_MAP[normalized]
+  }
+  
+  const lower = normalized.toLowerCase()
+  if (lower.includes('cloth') || lower.includes('dress') || lower.includes('shawl') || lower.includes('dupatta') || lower.includes('ajrak') || lower.includes('topi') || lower.includes('susi') || lower.includes('soosi') || lower.includes('wear') || lower.includes('garment')) {
+    return 'Clothing'
+  }
+  if (lower.includes('food') || lower.includes('eat') || lower.includes('drink') || lower.includes('taste') || lower.includes('spice') || lower.includes('honey')) {
+    return 'Local Foods'
+  }
+  if (lower.includes('beauty') || lower.includes('makeup') || lower.includes('skincare') || lower.includes('cosmetic')) {
+    return 'Beauty'
+  }
+  if (lower.includes('home') || lower.includes('decor') || lower.includes('handicraft') || lower.includes('craft') || lower.includes('electronic') || lower.includes('appliance') || lower.includes('furniture')) {
+    return 'Home Accessories'
+  }
+  
+  return 'Fashion'
 }
 
 function ProductListing() {
@@ -247,18 +267,7 @@ function ProductListing() {
   const [searchParams] = useSearchParams()
   const extent = useCatalogPriceExtent(items)
   
-  const categoryOptions = useMemo(() => {
-    const options = [...MAIN_CATEGORIES]
-    const dbCategories = (categories || []).filter(Boolean)
-    const productCategories = [...new Set((items || []).map((item) => item.category).filter(Boolean))]
-    const allKnownCategories = [...new Set([...dbCategories, ...productCategories])]
-    const extraCategories = allKnownCategories.filter((cat) => {
-      const isSub = Object.keys(SUB_TO_MAIN_MAP).includes(cat) && SUB_TO_MAIN_MAP[cat] !== cat
-      const alreadyIncluded = options.includes(cat) || options.includes(SUB_TO_MAIN_MAP[cat])
-      return !isSub && !alreadyIncluded
-    })
-    return [...options, ...extraCategories]
-  }, [categories, items])
+  const categoryOptions = MAIN_CATEGORIES
 
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState('all')
@@ -274,8 +283,8 @@ function ProductListing() {
   const subCategoryOptions = useMemo(() => {
     if (category === 'all') return []
     const rawCategories = items
-      .filter((product) => getMainCategory(product.category) === category)
-      .map((product) => product.category)
+      .filter((product) => product.category && getMainCategory(product.category) === category)
+      .map((product) => String(product.category).trim())
       .filter(Boolean)
     return [...new Set(rawCategories)]
   }, [category, items])
@@ -326,7 +335,10 @@ function ProductListing() {
         .toLowerCase()
         .includes(query.toLowerCase())
       const matchCategory = category === 'all' || getMainCategory(product.category) === category
-      const matchSubCategory = subCategory === 'all' || product.category === subCategory
+      const matchSubCategory =
+        subCategory === 'all' ||
+        (product.category &&
+          String(product.category).trim().toLowerCase() === String(subCategory).trim().toLowerCase())
       const price = getEffectivePrice(product)
       const matchPrice = price >= minPrice && price <= maxPrice
       const matchSize =

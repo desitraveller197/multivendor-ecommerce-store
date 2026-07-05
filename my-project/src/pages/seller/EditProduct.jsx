@@ -22,10 +22,28 @@ function EditProduct() {
   const categories = useSelector((state) => state.products.categories)
   const categoryOptions = categories.length > 0 ? categories : [
     'Clothing',
+    'Traditional Clothing',
     'Shawls & Dupattas',
-    'Footwear (Chappals)',
+    'Embroidered Phulkari Dupatta',
+    'Fancy Dupatta Designs',
+    'Hand Embroidered Organza Dupatta',
+    'Handmade Applique Dresses',
+    'Shawls For Men',
+    'Shawls For Women',
+    'Shawls for Men & Women',
+    'Sindhi Ajrak',
+    'Sindhi Topi',
+    'Susi (Soosi) Fabric Dresses',
+    'Electronics',
     'Handicrafts & Decor',
+    'Home',
+    'Home Accessories',
+    'Footwear (Chappals)',
     'Organic Beauty',
+    'Beauty',
+    'Fashion',
+    'Accessories',
+    'Jewelry',
     'Local Foods'
   ]
   
