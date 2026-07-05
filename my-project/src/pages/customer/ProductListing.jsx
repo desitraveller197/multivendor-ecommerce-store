@@ -205,7 +205,6 @@ const MAIN_CATEGORIES = [
   'Clothing',
   'Electronics',
   'Home Accessories',
-  'Fashion',
   'Local Foods'
 ]
 
@@ -227,17 +226,17 @@ const SUB_TO_MAIN_MAP = {
   'Handicrafts & Decor': 'Home Accessories',
   'Home': 'Home Accessories',
   'Home Accessories': 'Home Accessories',
-  'Footwear (Chappals)': 'Fashion',
-  'Organic Beauty': 'Fashion',
-  'Beauty': 'Fashion',
-  'Fashion': 'Fashion',
-  'Accessories': 'Fashion',
-  'Jewelry': 'Fashion',
+  'Footwear (Chappals)': 'Clothing',
+  'Organic Beauty': 'Clothing',
+  'Beauty': 'Clothing',
+  'Fashion': 'Clothing',
+  'Accessories': 'Clothing',
+  'Jewelry': 'Clothing',
   'Local Foods': 'Local Foods'
 }
 
 function getMainCategory(subCategory) {
-  if (!subCategory) return 'Fashion'
+  if (!subCategory) return 'Clothing'
   const normalized = String(subCategory).trim()
   return SUB_TO_MAIN_MAP[normalized] || normalized
 }
