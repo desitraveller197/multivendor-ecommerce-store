@@ -90,7 +90,7 @@ function Home() {
   ]
 
   return (
-    <section className="space-y-10">
+    <section className="mx-auto max-w-[983px] space-y-10">
       <div className="rounded-2xl bg-gradient-to-r from-blue-700 to-indigo-600 p-8 text-white shadow-lg transition-transform duration-300 hover:-translate-y-1 hover:shadow-xl md:p-10">
         <h1 className="text-3xl font-bold md:text-4xl">Bazarix</h1>
         <p className="mt-2 max-w-2xl text-sm text-blue-100 md:text-base">

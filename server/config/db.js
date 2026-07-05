@@ -2,22 +2,30 @@ const mongoose = require('mongoose');
 
 /**
  * Connect to MongoDB (Atlas or local) using the MONGO_URI env var.
- * Exits the process on failure so a misconfigured server never appears "up".
+ * Uses a cached promise so serverless invocations reuse the same connection.
  */
+let cached = null;
+
 async function connectDB() {
+  // If already connected or connecting, return the cached promise
+  if (cached) return cached;
+
   const uri = process.env.MONGO_URI;
   if (!uri) {
-    console.error('✖ MONGO_URI is not set. Copy .env.example to .env and configure it.');
-    process.exit(1);
+    throw new Error('✖ MONGO_URI is not set. Copy .env.example to .env and configure it.');
   }
-  try {
-    mongoose.set('strictQuery', true);
-    const conn = await mongoose.connect(uri);
+
+  mongoose.set('strictQuery', true);
+  cached = mongoose.connect(uri).then((conn) => {
     console.log(`✔ MongoDB connected: ${conn.connection.host}`);
-  } catch (err) {
+    return conn;
+  }).catch((err) => {
+    cached = null; // Reset so next call retries
     console.error(`✖ MongoDB connection error: ${err.message}`);
-    process.exit(1);
-  }
+    throw err;
+  });
+
+  return cached;
 }
 
 module.exports = connectDB;

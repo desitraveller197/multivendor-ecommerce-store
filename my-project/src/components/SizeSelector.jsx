@@ -2,7 +2,7 @@
  * Multi-select size picker for the seller product forms. `selected` is an array
  * of size labels; `onChange` receives the next array when a chip is toggled.
  */
-const DEFAULT_SIZES = ['Small', 'Medium', 'Large', 'XL']
+const DEFAULT_SIZES = ['XS', 'S', 'M', 'L', 'XL']
 
 function SizeSelector({ selected = [], onChange, options = DEFAULT_SIZES }) {
   const toggle = (size) => {

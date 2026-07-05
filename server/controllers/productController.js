@@ -1,6 +1,7 @@
 const asyncHandler = require('../utils/asyncHandler');
 const Product = require('../models/Product');
 const Shop = require('../models/Shop');
+const { productMatchesFilters } = require('../utils/productFilterUtils');
 
 /** Ensure the authenticated seller has a Shop; auto-create an empty one if missing. */
 async function getOrCreateShop(user) {
@@ -47,15 +48,31 @@ const listProducts = asyncHandler(async (req, res) => {
     filter.$text = { $search: req.query.q };
   }
 
-  const [items, total] = await Promise.all([
-    Product.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).lean({ virtuals: true }),
-    Product.countDocuments(filter),
-  ]);
+  const sizeFilter = req.query.size ? String(req.query.size).split(',').filter(Boolean) : [];
+  const colorFilter = req.query.colorFamilies
+    ? String(req.query.colorFamilies).split(',').filter(Boolean)
+    : [];
+  const seasonFilter = req.query.seasons ? String(req.query.seasons).split(',').filter(Boolean) : [];
+
+  let items = await Product.find(filter).sort({ createdAt: -1 }).lean({ virtuals: true });
+
+  if (sizeFilter.length || colorFilter.length || seasonFilter.length) {
+    items = items.filter((product) =>
+      productMatchesFilters(product, {
+        sizes: sizeFilter,
+        colorFamilies: colorFilter,
+        seasons: seasonFilter,
+      })
+    );
+  }
+
+  const total = items.length;
+  const paged = items.slice(skip, skip + limit);
 
   // Frontend setProducts expects a plain array; pagination meta is exposed via headers.
   res.set('X-Total-Count', String(total));
   res.set('X-Page', String(page));
-  res.json(items.map(withId));
+  res.json(paged.map(withId));
 });
 
 function resolveImageUrl(imagePath) {
@@ -110,6 +127,8 @@ const createProduct = asyncHandler(async (req, res) => {
     category: body.category || '',
     region: body.region,
     culture: body.culture,
+    colorFamilies: Array.isArray(body.colorFamilies) ? body.colorFamilies : [],
+    seasons: Array.isArray(body.seasons) ? body.seasons : [],
     variants: Array.isArray(body.variants) ? body.variants : [],
     seller: req.user._id,
     shop: shop._id,
@@ -134,9 +153,19 @@ const updateProduct = asyncHandler(async (req, res) => {
     throw new Error('You can only edit your own products');
   }
 
+  // Strip local host prefix from image URL if present
+  if (req.body.image && typeof req.body.image === 'string') {
+    const port = process.env.PORT || 5000;
+    const localPrefix = `http://localhost:${port}`;
+    if (req.body.image.startsWith(localPrefix)) {
+      req.body.image = req.body.image.slice(localPrefix.length);
+    }
+  }
+
   const editable = [
     'name', 'description', 'price', 'discountPrice', 'stock',
-    'image', 'images', 'category', 'region', 'culture', 'variants', 'isPublished',
+    'image', 'images', 'category', 'region', 'culture', 'colorFamilies', 'seasons',
+    'variants', 'isPublished',
   ];
   editable.forEach((key) => {
     if (req.body[key] !== undefined) product[key] = req.body[key];

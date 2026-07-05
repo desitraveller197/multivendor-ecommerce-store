@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
+import StartChatButton from '../../components/StartChatButton'
 import InvoiceDownloadBtn from '../../components/InvoiceDownloadBtn'
 import StarRating from '../../components/StarRating'
 import PageFrame from '../../components/PageFrame'
@@ -208,7 +209,19 @@ function OrderDetail() {
             <StarRating value={4} />
           </div>
           
-          <div>
+          <div className="flex flex-wrap gap-3 pt-2">
+            {[...new Set((order.items || []).map((item) => item.sellerId).filter(Boolean))].map(
+              (sellerId) => (
+                <StartChatButton
+                  key={sellerId}
+                  recipientId={sellerId}
+                  type="order"
+                  orderId={order.id}
+                  subject={`Order #${String(order.id).slice(-6)}`}
+                  label="Chat about this order"
+                />
+              ),
+            )}
             <InvoiceDownloadBtn orderId={order.id} />
           </div>
         </div>

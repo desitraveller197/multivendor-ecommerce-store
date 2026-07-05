@@ -6,6 +6,7 @@ function Notifications() {
   const notifications = useSelector((state) => state.notifications.items)
 
   return (
+    <div className="mx-auto max-w-[983px]">
     <PageFrame
       title="Your Notifications"
       description="Track order updates, offers, and important account alerts."
@@ -20,6 +21,7 @@ function Notifications() {
         ))}
       </div>
     </PageFrame>
+    </div>
   )
 }
 

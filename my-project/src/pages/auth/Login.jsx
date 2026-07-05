@@ -1,14 +1,17 @@
 import { useState } from 'react'
 import { useDispatch } from 'react-redux'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import axiosInstance from '../../api/axiosConfig'
 import { USE_MOCK, delay } from '../../api/mockApi'
 import { loginSuccess } from '../../store/authSlice'
+import SocialLogin from '../../components/SocialLogin'
 
 function Login() {
   const dispatch = useDispatch()
   const navigate = useNavigate()
   const location = useLocation()
+  const [searchParams] = useSearchParams()
+  const sessionExpired = searchParams.get('session') === 'expired'
   
   const [formData, setFormData] = useState({
     email: '',
@@ -51,22 +54,51 @@ function Login() {
     }
   }
 
-  const inputClass = 'w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 disabled:bg-slate-50 disabled:text-slate-400'
+  const navigateByRole = (data) => {
+    dispatch(loginSuccess({ token: data.token, role: data.role, user: data.user }))
+    const from = location.state?.from?.pathname
+    if (data.role === 'admin') navigate('/admin/dashboard')
+    else if (data.role === 'seller') navigate('/seller/dashboard')
+    else navigate(from || '/')
+  }
+
+  // Exchange a Google ID token / Facebook access token for our app's session.
+  const handleSocialToken = async (provider, token) => {
+    setError('')
+    setLoading(true)
+    try {
+      const payload = provider === 'google' ? { credential: token } : { accessToken: token }
+      const res = await axiosInstance.post(`/auth/${provider}`, payload)
+      navigateByRole(res.data)
+    } catch (err) {
+      setError(err.response?.data?.message || 'Social login failed. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const inputClass = 'w-full rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 disabled:bg-slate-50 disabled:text-slate-400'
 
   return (
-    <section className="mx-auto max-w-md rounded-lg bg-white p-6 shadow-sm">
-      <h1 className="text-2xl font-bold text-slate-900">Login</h1>
-      <p className="mt-1 text-sm text-slate-500">Login for multi-role.</p>
+    <section className="mx-auto max-w-[360px] rounded-lg bg-white p-4 shadow-md">
+      <h1 className="text-xl font-bold text-slate-900">Login</h1>
+      <p className="mt-0.5 text-xs text-slate-500">Login for multi-role.</p>
       
       {location.state?.message && (
-        <div className="mt-4 rounded bg-green-100 p-3 text-sm text-green-700">
+        <div className="mt-3 rounded bg-green-100 p-2.5 text-xs text-green-700">
           {location.state.message}
         </div>
       )}
 
-      <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
-        <div className="flex flex-col gap-1">
-          <label htmlFor="login-email" className="text-sm font-medium text-slate-700">Email</label>
+      {sessionExpired && (
+        <div className="mt-3 rounded bg-amber-100 p-2.5 text-xs text-amber-800">
+          Your session expired. Please log in again to continue.
+        </div>
+      )}
+
+      <form className="mt-4 space-y-3" onSubmit={handleSubmit}>
+        <div className="flex flex-col gap-0.5">
+          <label htmlFor="login-email" className="text-xs font-semibold text-slate-600">Email</label>
           <input
             id="login-email"
             type="email"
@@ -79,8 +111,8 @@ function Login() {
             }
           />
         </div>
-        <div className="flex flex-col gap-1">
-          <label htmlFor="login-password" className="text-sm font-medium text-slate-700">Password</label>
+        <div className="flex flex-col gap-0.5">
+          <label htmlFor="login-password" className="text-xs font-semibold text-slate-600">Password</label>
           <input
             id="login-password"
             type="password"
@@ -93,8 +125,8 @@ function Login() {
             }
           />
         </div>
-        <div className="flex flex-col gap-1">
-          <label htmlFor="login-role" className="text-sm font-medium text-slate-700">Role</label>
+        <div className="flex flex-col gap-0.5">
+          <label htmlFor="login-role" className="text-xs font-semibold text-slate-600">Role</label>
           <select
             id="login-role"
             className={inputClass}
@@ -113,7 +145,7 @@ function Login() {
 
         <button
           type="submit"
-          className="w-full rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-all duration-300 hover:-translate-y-0.5 hover:bg-blue-700 hover:shadow-md focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70"
+          className="w-full rounded-md bg-blue-600 px-4 py-1.5 text-sm font-semibold text-white transition-all duration-300 hover:-translate-y-0.5 hover:bg-blue-700 hover:shadow-md focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70"
           disabled={loading}
         >
           {loading ? (
@@ -125,13 +157,15 @@ function Login() {
         </button>
       </form>
 
-      <p className="mt-4 text-sm text-slate-600">
+      <SocialLogin onToken={handleSocialToken} onError={setError} disabled={loading} />
+
+      <p className="mt-3 text-xs text-slate-500">
         New user?{' '}
         <Link className="font-semibold text-blue-700 hover:text-blue-900" to="/register">
           Register here
         </Link>
       </p>
-      <p className="mt-2 text-sm text-slate-600">
+      <p className="mt-1 text-xs text-slate-500">
         Forgot password?{' '}
         <Link className="font-semibold text-blue-700 hover:text-blue-900" to="/forgot-password">
           Reset it

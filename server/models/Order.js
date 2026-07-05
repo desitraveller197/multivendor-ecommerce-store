@@ -53,6 +53,7 @@ const orderSchema = new mongoose.Schema(
     // Reference we send to the payment gateway (JazzCash/Easypaisa txn ref).
     gatewayTxnRef: { type: String, index: true, sparse: true },
     stripePaymentIntentId: { type: String, index: true, sparse: true }, // legacy
+    paymentReceipt: { type: String, default: '' },
   },
   {
     timestamps: true,

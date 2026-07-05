@@ -1,8 +1,11 @@
 const crypto = require('crypto');
+const { OAuth2Client } = require('google-auth-library');
 const asyncHandler = require('../utils/asyncHandler');
 const generateToken = require('../utils/generateToken');
 const sendEmail = require('../utils/sendEmail');
 const User = require('../models/User');
+
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 /**
  * Shape a user document into the object the frontend authSlice expects.
@@ -74,6 +77,108 @@ const login = asyncHandler(async (req, res) => {
 
   const token = generateToken(user);
   res.json({ token, role: user.role, user: publicUser(user) });
+});
+
+/**
+ * Find a user by email or create one for a social (OAuth) login, then return a
+ * JWT + the public user. Existing local accounts with the same email are linked.
+ */
+async function issueSocialSession(res, { provider, providerId, email, name, avatar }) {
+  let user = await User.findOne({ email });
+  if (!user) {
+    user = await User.create({
+      name: name || 'User',
+      email,
+      role: 'customer',
+      isApproved: true,
+      provider,
+      providerId,
+      ...(avatar ? { avatar } : {}),
+    });
+  } else {
+    // Link the provider to an existing account if not already set.
+    if (!user.providerId) {
+      user.provider = user.provider === 'local' ? provider : user.provider;
+      user.providerId = providerId;
+      await user.save({ validateBeforeSave: false });
+    }
+    if (!user.isActive) {
+      res.status(403);
+      throw new Error('This account has been deactivated');
+    }
+  }
+
+  const token = generateToken(user);
+  res.json({ token, role: user.role, user: publicUser(user) });
+}
+
+// POST /api/auth/google  (public) — body: { credential } (Google ID token)
+const googleLogin = asyncHandler(async (req, res) => {
+  if (!process.env.GOOGLE_CLIENT_ID) {
+    res.status(500);
+    throw new Error('Google login is not configured on the server');
+  }
+  const { credential } = req.body;
+  if (!credential) {
+    res.status(400);
+    throw new Error('Missing Google credential');
+  }
+
+  let payload;
+  try {
+    const ticket = await googleClient.verifyIdToken({
+      idToken: credential,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+    payload = ticket.getPayload();
+  } catch {
+    res.status(401);
+    throw new Error('Google authentication failed');
+  }
+
+  if (!payload || !payload.email) {
+    res.status(401);
+    throw new Error('Google account has no email');
+  }
+
+  await issueSocialSession(res, {
+    provider: 'google',
+    providerId: payload.sub,
+    email: payload.email,
+    name: payload.name,
+    avatar: payload.picture,
+  });
+});
+
+// POST /api/auth/facebook  (public) — body: { accessToken }
+const facebookLogin = asyncHandler(async (req, res) => {
+  const { accessToken } = req.body;
+  if (!accessToken) {
+    res.status(400);
+    throw new Error('Missing Facebook access token');
+  }
+
+  let data;
+  try {
+    const url = `https://graph.facebook.com/me?fields=id,name,email,picture.type(large)&access_token=${encodeURIComponent(accessToken)}`;
+    const resp = await fetch(url);
+    data = await resp.json();
+    if (!resp.ok || data.error) throw new Error('verify failed');
+  } catch {
+    res.status(401);
+    throw new Error('Facebook authentication failed');
+  }
+
+  // Facebook may not return an email (user denied / no email on account).
+  const email = data.email || `${data.id}@facebook.local`;
+
+  await issueSocialSession(res, {
+    provider: 'facebook',
+    providerId: data.id,
+    email,
+    name: data.name,
+    avatar: data.picture?.data?.url,
+  });
 });
 
 // GET /api/auth/profile  (auth)
@@ -155,6 +260,8 @@ const resetPassword = asyncHandler(async (req, res) => {
 module.exports = {
   register,
   login,
+  googleLogin,
+  facebookLogin,
   getProfile,
   updateProfile,
   changePassword,

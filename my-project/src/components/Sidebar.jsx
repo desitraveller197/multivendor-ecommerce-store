@@ -12,6 +12,7 @@ const linksByRole = {
     { to: '/admin/refunds', label: 'Refund Requests' },
     { to: '/admin/sales-report', label: 'Sales Report' },
     { to: '/admin/platform-settings', label: 'Platform Settings' },
+    { to: '/messages', label: 'Messages' },
   ],
   seller: [
     { to: '/seller/dashboard', label: 'Dashboard' },
@@ -20,6 +21,7 @@ const linksByRole = {
     { to: '/seller/discounts', label: 'Manage Discounts' },
     { to: '/seller/orders', label: 'Orders' },
     { to: '/seller/withdraw', label: 'Withdraw Earnings' },
+    { to: '/messages', label: 'Messages' },
   ],
   customer: [
     { to: '/products', label: 'Products' },
@@ -27,6 +29,7 @@ const linksByRole = {
     { to: '/customer/cart', label: 'Cart' },
     { to: '/my-orders', label: 'My Orders' },
     { to: '/customer/notifications', label: 'Notifications' },
+    { to: '/messages', label: 'Messages' },
   ],
 }
 

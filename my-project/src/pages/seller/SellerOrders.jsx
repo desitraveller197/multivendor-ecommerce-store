@@ -9,6 +9,7 @@ function SellerOrders() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [updatingId, setUpdatingId] = useState(null)
+  const [selectedReceipt, setSelectedReceipt] = useState(null)
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -16,7 +17,7 @@ function SellerOrders() {
         if (USE_MOCK) {
           await delay(600)
           setOrders([
-            { id: 'ORD-001', customer: 'Ali Raza', amount: 3200, status: 'Pending' },
+            { id: 'ORD-001', customer: 'Ali Raza', amount: 3200, status: 'Pending', paymentReceipt: '/images/jazzcash_qr.jpg' },
             { id: 'ORD-002', customer: 'Sara Khan', amount: 1800, status: 'Processing' },
             { id: 'ORD-003', customer: 'Omar Tariq', amount: 5400, status: 'Delivered' },
           ])
@@ -96,11 +97,28 @@ function SellerOrders() {
                   <p className="font-semibold text-slate-900">{order.id}</p>
                   <p className="text-slate-500">{order.customer}</p>
                   <p className="font-bold text-blue-700">PKR {order.amount}</p>
+                  {order.paymentReceipt && (
+                    <button
+                      onClick={() => setSelectedReceipt(order.paymentReceipt)}
+                      className="mt-1 flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-850 font-semibold transition-all border border-blue-200 hover:border-blue-300 bg-blue-50 px-2 py-1 rounded shadow-sm hover:shadow"
+                    >
+                      📄 View Payment Receipt
+                    </button>
+                  )}
                 </div>
                 <div className="flex flex-wrap items-center gap-3">
                   <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${getBadgeClass(order.status)}`}>
                     {order.status}
                   </span>
+                  {order.status === 'Pending' && order.paymentReceipt && (
+                    <button
+                      onClick={() => handleStatusChange(order.id, 'Processing')}
+                      disabled={updatingId === order.id}
+                      className="rounded bg-green-600 hover:bg-green-700 active:bg-green-800 px-3 py-1.5 text-xs font-bold text-white shadow-sm transition-all hover:shadow disabled:opacity-50"
+                    >
+                      Confirm Order
+                    </button>
+                  )}
                   <div className="flex items-center gap-2">
                     <select
                       value={order.status}
@@ -125,6 +143,44 @@ function SellerOrders() {
         </div>
         </div>
       </div>
+
+      {/* Payment Receipt Lightbox/Modal */}
+      {selectedReceipt && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+          onClick={() => setSelectedReceipt(null)}
+        >
+          <div 
+            className="relative max-w-lg w-full bg-white rounded-xl overflow-hidden shadow-2xl p-6 flex flex-col items-center gap-4 animate-in fade-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-lg font-bold text-slate-900 w-full border-b pb-2 flex justify-between items-center">
+              <span>Payment Receipt Screenshot</span>
+              <button 
+                onClick={() => setSelectedReceipt(null)} 
+                className="text-slate-400 hover:text-slate-600 font-normal text-xl"
+              >
+                ✕
+              </button>
+            </h3>
+            <div className="w-full flex justify-center bg-slate-50 border rounded-lg p-2 max-h-[70vh] overflow-auto">
+              <img 
+                src={selectedReceipt} 
+                alt="Payment Receipt Screenshot" 
+                className="max-w-full h-auto object-contain rounded"
+              />
+            </div>
+            <div className="w-full flex justify-end">
+              <button 
+                onClick={() => setSelectedReceipt(null)}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded font-medium text-sm transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </PageFrame>
   )
 }

@@ -1,25 +1,41 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { useDispatch } from 'react-redux'
+import { useDispatch, useSelector } from 'react-redux'
 import Sidebar from '../../components/Sidebar'
 import PageFrame from '../../components/PageFrame'
 import SizeSelector from '../../components/SizeSelector'
+import MultiSelectChips from '../../components/MultiSelectChips'
 import axiosInstance from '../../api/axiosConfig'
 import { USE_MOCK, delay } from '../../api/mockApi'
-import { fetchProducts } from '../../store/productSlice'
+import { fetchProducts, updateProduct } from '../../store/productSlice'
 
 // Regions used by the storefront's Regional filter (must match those labels).
 const REGION_OPTIONS = ['Punjab', 'Sindh', 'KPK', 'Balochistan']
+const COLOR_FAMILY_OPTIONS = ['Black', 'White', 'Blue', 'Red', 'Green', 'Brown', 'Pink', 'Gold']
+const SEASON_OPTIONS = ['Winter', 'Summer', 'Spring', 'Autumn']
 
 function EditProduct() {
   const { id } = useParams()
   const navigate = useNavigate()
   const dispatch = useDispatch()
   
+  const categories = useSelector((state) => state.products.categories)
+  const categoryOptions = categories.length > 0 ? categories : [
+    'Clothing',
+    'Shawls & Dupattas',
+    'Footwear (Chappals)',
+    'Handicrafts & Decor',
+    'Organic Beauty',
+    'Local Foods'
+  ]
+  
   const [form, setForm] = useState(null)
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState(null)
+  const [selectedFile, setSelectedFile] = useState(null)
+  const [previewUrl, setPreviewUrl] = useState('')
+  const [submitLabel, setSubmitLabel] = useState('Save Changes')
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -31,11 +47,14 @@ function EditProduct() {
             name: 'Phulkari Dupatta',
             description: 'Traditional handcrafted dupatta from Punjab.',
             category: 'Clothing',
+            region: 'Punjab',
             price: 3500,
             discountPrice: 2800,
             stock: 15,
             image: '',
             variants: [],
+            colorFamilies: ['Pink', 'Gold'],
+            seasons: ['Spring', 'Autumn'],
           })
         } else {
           const res = await axiosInstance.get(`/products/${id}`)
@@ -57,16 +76,40 @@ function EditProduct() {
     setSubmitting(true)
     
     try {
+      let imageUrl = form.image
+      if (selectedFile) {
+        setSubmitLabel('Uploading image...')
+        if (USE_MOCK) {
+          await delay(1000)
+          imageUrl = previewUrl
+        } else {
+          const fd = new FormData()
+          fd.append('image', selectedFile)
+          const res = await axiosInstance.post('/upload/image', fd, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+          })
+          imageUrl = res.data.imageUrl
+        }
+      }
+
+      setSubmitLabel('Saving changes...')
+      const payload = {
+        ...form,
+        image: imageUrl
+      }
+
       if (USE_MOCK) {
         await delay(700)
+        dispatch(updateProduct(payload))
       } else {
-        await axiosInstance.put(`/products/${id}`, form)
+        await axiosInstance.put(`/products/${id}`, payload)
         dispatch(fetchProducts())
       }
       navigate('/seller/products')
     } catch (err) {
       console.error('Failed to update product:', err)
-      setError('Failed to update product.')
+      setError('Failed to update product. Please try again.')
+      setSubmitLabel('Save Changes')
       setSubmitting(false)
     }
   }
@@ -104,12 +147,19 @@ function EditProduct() {
                 <label className="block text-sm font-semibold text-slate-700 mb-1">
                   Category
                 </label>
-                <input
+                <select
                   required
                   value={form.category || ''}
-              className="w-full rounded border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  className="w-full rounded border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                   onChange={(event) => setForm((prev) => ({ ...prev, category: event.target.value }))}
-                />
+                >
+                  <option value="">Select category…</option>
+                  {categoryOptions.map((cat) => (
+                    <option key={cat} value={cat}>
+                      {cat}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div>
@@ -175,11 +225,53 @@ function EditProduct() {
               </div>
             </div>
 
+            <div className="flex flex-col gap-1 border-t border-slate-100 pt-4">
+              <label className="text-sm font-semibold text-slate-700">
+                Product Image / Replace Photo
+              </label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files[0]
+                  if (file) {
+                    setSelectedFile(file)
+                    setPreviewUrl(URL.createObjectURL(file))
+                  }
+                }}
+                className="w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
+              />
+              {(previewUrl || form.image) && (
+                <div className="mt-2">
+                  <p className="text-xs text-slate-500 mb-1">Image Preview:</p>
+                  <img
+                    src={previewUrl || form.image}
+                    alt="Preview"
+                    className="h-40 w-full rounded-lg border border-slate-200 object-contain bg-slate-50"
+                  />
+                </div>
+              )}
+            </div>
+
             <SizeSelector
               selected={(form.variants || []).map((v) => v.size).filter(Boolean)}
               onChange={(sizes) =>
                 setForm((prev) => ({ ...prev, variants: sizes.map((size) => ({ size })) }))
               }
+            />
+            <MultiSelectChips
+              title="Color Families"
+              description="Select the main color families customers can filter by."
+              options={COLOR_FAMILY_OPTIONS}
+              selected={form.colorFamilies || []}
+              onChange={(colorFamilies) => setForm((prev) => ({ ...prev, colorFamilies }))}
+            />
+            <MultiSelectChips
+              title="Season"
+              description="Choose the seasons this product is most suitable for."
+              options={SEASON_OPTIONS}
+              selected={form.seasons || []}
+              onChange={(seasons) => setForm((prev) => ({ ...prev, seasons }))}
             />
 
             <div>
@@ -206,9 +298,9 @@ function EditProduct() {
                 {submitting ? (
                   <span className="inline-flex items-center gap-2">
                     <span className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                    Saving…
+                    {submitLabel}
                   </span>
-                ) : 'Save Changes'}
+                ) : submitLabel}
               </button>
               <button
                 type="button"

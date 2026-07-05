@@ -90,15 +90,18 @@ function ShopPage() {
 
   if (error) {
     return (
-      <section className="rounded-lg bg-white p-6 shadow-sm">
-        <div className="rounded bg-red-50 p-3 text-sm text-red-700 border border-red-200">
-          {error}
-        </div>
-      </section>
+      <div className="mx-auto max-w-[983px]">
+        <section className="rounded-lg bg-white p-6 shadow-sm">
+          <div className="rounded bg-red-50 p-3 text-sm text-red-700 border border-red-200">
+            {error}
+          </div>
+        </section>
+      </div>
     )
   }
 
   return (
+    <div className="mx-auto max-w-[983px]">
     <section className="rounded-lg bg-white shadow-sm overflow-hidden pb-6">
       {shopLoading ? (
         <div className="animate-pulse">
@@ -158,7 +161,7 @@ function ShopPage() {
           ))}
         </div>
         
-        <div className="mt-6 grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {productsLoading ? (
             <>
               <div className="h-64 animate-pulse rounded border border-slate-200 bg-slate-100" />
@@ -181,6 +184,7 @@ function ShopPage() {
         </div>
       </div>
     </section>
+    </div>
   )
 }
 

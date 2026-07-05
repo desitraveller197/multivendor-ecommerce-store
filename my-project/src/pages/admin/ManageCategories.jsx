@@ -16,10 +16,8 @@ const fetchCategories = async () => {
       { id: 6, name: 'Local Foods' },
     ]
   }
-  /* TODO: replace with real endpoint when ready */
-  /* const res = await axiosInstance.get('/categories') */
-  /* return res.data */
-  return []
+  const res = await axiosInstance.get('/categories')
+  return res.data
 }
 
 const addCategoryApi = async (name) => {
@@ -27,10 +25,8 @@ const addCategoryApi = async (name) => {
     await delay(400)
     return { id: Date.now(), name }
   }
-  /* TODO: replace with real endpoint when ready */
-  /* const res = await axiosInstance.post('/categories', { name }) */
-  /* return res.data */
-  return { id: Date.now(), name }
+  const res = await axiosInstance.post('/categories', { name })
+  return res.data
 }
 
 const deleteCategoryApi = async (id) => {
@@ -38,8 +34,7 @@ const deleteCategoryApi = async (id) => {
     await delay(400)
     return { success: true }
   }
-  /* TODO: replace with real endpoint when ready */
-  /* await axiosInstance.delete(`/categories/${id}`) */
+  await axiosInstance.delete(`/categories/${id}`)
   return { success: true }
 }
 

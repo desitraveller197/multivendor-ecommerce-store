@@ -6,6 +6,8 @@ html,
 body,
 #root {
   min-height: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 body {
@@ -21,6 +23,9 @@ body {
 }
 
 .app-shell-background {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
   background-image: url('/site-background.png');
   background-size: cover;
   background-position: center center;

@@ -7,26 +7,15 @@ import { clearCart } from '../../store/cartSlice'
 import PageFrame from '../../components/PageFrame'
 
 const PAYMENT_METHODS = [
-  { value: 'Easypaisa', label: 'Card Payment' },
+  { value: 'Stripe', label: 'Card Payment (Stripe)' },
+  { value: 'JazzCash', label: 'JazzCash (Mobile Wallet)' },
   { value: 'COD', label: 'Cash on Delivery' },
 ]
 
-/** Luhn checksum — basic validity check for a card number. */
-function luhnValid(value) {
+/** Accept any 13–19 digit card number (demo — no strict Luhn check). */
+function cardNumberValid(value) {
   const digits = value.replace(/\D/g, '')
-  if (digits.length < 13 || digits.length > 19) return false
-  let sum = 0
-  let alt = false
-  for (let i = digits.length - 1; i >= 0; i -= 1) {
-    let d = Number(digits[i])
-    if (alt) {
-      d *= 2
-      if (d > 9) d -= 9
-    }
-    sum += d
-    alt = !alt
-  }
-  return sum % 10 === 0
+  return digits.length >= 13 && digits.length <= 19
 }
 
 function cardBrand(value) {
@@ -75,10 +64,12 @@ function Checkout() {
   const [province, setProvince] = useState('')
   const [postal, setPostal] = useState('')
 
-  const [paymentMethod, setPaymentMethod] = useState('Easypaisa')
+  const [paymentMethod, setPaymentMethod] = useState('Stripe')
   const [card, setCard] = useState({ number: '', name: '', expiry: '', cvv: '' })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [receiptFile, setReceiptFile] = useState(null)
+  const [receiptPreview, setReceiptPreview] = useState('')
 
   const total = cartItems.reduce(
     (sum, item) => sum + item.quantity * (item.discountPrice ?? item.price),
@@ -100,7 +91,7 @@ function Checkout() {
   }
 
   const validateCard = () => {
-    if (!luhnValid(card.number)) return 'Enter a valid card number.'
+    if (!cardNumberValid(card.number)) return 'Enter a valid card number (13–19 digits).'
     if (!card.name.trim()) return 'Enter the name on the card.'
     if (!expiryValid(card.expiry)) return 'Enter a valid expiry date (MM/YY).'
     if (!/^\d{3,4}$/.test(card.cvv)) return 'Enter a valid CVV.'
@@ -117,12 +108,10 @@ function Checkout() {
       setError('Please fill out all shipping details.')
       return
     }
-    if (paymentMethod === 'Easypaisa') {
-      const cardError = validateCard()
-      if (cardError) {
-        setError(cardError)
-        return
-      }
+    // No client card validation needed for Stripe Checkout
+    if (paymentMethod === 'JazzCash' && !receiptFile) {
+      setError('Please upload your JazzCash payment receipt screenshot.')
+      return
     }
 
     setLoading(true)
@@ -134,12 +123,16 @@ function Checkout() {
         return
       }
 
-      // Only brand + last 4 of the card leave the browser — never the full
-      // number or CVV.
-      const cardMeta =
-        paymentMethod === 'Easypaisa'
-          ? { brand: cardBrand(card.number), last4: card.number.replace(/\D/g, '').slice(-4) }
-          : undefined
+      // 1. Upload screenshot if payment is JazzCash
+      let receiptUrl = ''
+      if (paymentMethod === 'JazzCash' && receiptFile) {
+        const fd = new FormData()
+        fd.append('image', receiptFile)
+        const uploadRes = await axiosInstance.post('/upload/image', fd, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        })
+        receiptUrl = uploadRes.data.imageUrl
+      }
 
       const res = await axiosInstance.post('/orders', {
         items: cartItems.map((item) => ({
@@ -149,24 +142,32 @@ function Checkout() {
         })),
         address: { street, city, province, postal },
         paymentMethod,
-        card: cardMeta,
+        paymentReceipt: receiptUrl,
       })
 
       const { payment } = res.data
 
-      if (paymentMethod === 'COD' || payment?.type === 'cod') {
+      if (paymentMethod === 'COD' || payment?.type === 'cod' || payment?.type === 'manual_receipt') {
         dispatch(clearCart())
-        navigate('/my-orders', { state: { message: 'Order placed successfully!' } })
+        navigate('/my-orders', { state: { message: payment?.type === 'manual_receipt' ? 'Order placed successfully! Pending payment confirmation.' : 'Order placed successfully!' } })
         return
       }
 
-      // The cart is cleared on the success page after payment completes.
+      // Demo/settled payment — go to the success page within the app.
+      if (payment?.type === 'paid') {
+        dispatch(clearCart())
+        navigate(`/checkout/success?orderId=${res.data.orderId}`)
+        return
+      }
+      // Live gateway — hand off to its hosted page (returns to success page).
       if (payment?.type === 'redirect') {
         postToGateway(payment.postUrl, payment.fields)
         return
       }
-      if (payment?.type === 'simulate') {
-        window.location.assign(payment.url)
+      // Stripe Checkout hosted redirect
+      if (payment?.type === 'stripe_redirect') {
+        dispatch(clearCart())
+        window.location.href = payment.url
         return
       }
 
@@ -229,50 +230,31 @@ function Checkout() {
             </select>
           </div>
 
-          {paymentMethod === 'Easypaisa' && (
+          {paymentMethod === 'Stripe' && (
             <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-slate-900">Card details</h3>
-                <span className="text-xs font-medium text-slate-500">{cardBrand(card.number)}</span>
+              <div className="flex items-center gap-2">
+                <span className="rounded bg-blue-600 px-2 py-0.5 text-xs font-bold text-white">
+                  Stripe
+                </span>
+                <h3 className="text-sm font-semibold text-slate-900">Credit / Debit Card</h3>
               </div>
-              <p className="mt-1 text-xs text-slate-500">
-                Payment is received in the store's Easypaisa account.
+              <p className="mt-2 text-xs text-slate-500">
+                You will be redirected to Stripe's secure payment portal to enter card details and complete your order.
               </p>
-              <div className="mt-3 grid gap-3">
-                <input
-                  className={inputClass}
-                  placeholder="Card number"
-                  inputMode="numeric"
-                  autoComplete="cc-number"
-                  value={card.number}
-                  onChange={updateCard('number')}
-                />
-                <input
-                  className={inputClass}
-                  placeholder="Name on card"
-                  autoComplete="cc-name"
-                  value={card.name}
-                  onChange={updateCard('name')}
-                />
-                <div className="grid grid-cols-2 gap-3">
-                  <input
-                    className={inputClass}
-                    placeholder="Expiry (MM/YY)"
-                    inputMode="numeric"
-                    autoComplete="cc-exp"
-                    value={card.expiry}
-                    onChange={updateCard('expiry')}
-                  />
-                  <input
-                    className={inputClass}
-                    placeholder="CVV"
-                    inputMode="numeric"
-                    autoComplete="cc-csc"
-                    value={card.cvv}
-                    onChange={updateCard('cvv')}
-                  />
-                </div>
+            </div>
+          )}
+
+          {paymentMethod === 'JazzCash' && (
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+              <div className="flex items-center gap-2">
+                <span className="rounded bg-[#ED1C24] px-2 py-0.5 text-xs font-bold text-white">
+                  JazzCash
+                </span>
+                <h3 className="text-sm font-semibold text-slate-900">Mobile wallet (QR Payment)</h3>
               </div>
+              <p className="mt-2 text-xs text-slate-500">
+                Please scan the QR code in the Order Summary, send the exact order total to our JazzCash account, and upload the payment receipt below.
+              </p>
             </div>
           )}
         </div>
@@ -292,8 +274,58 @@ function Checkout() {
               </span>
             ) : paymentMethod === 'COD'
               ? 'Place Order'
-              : `Pay PKR ${total.toFixed(0)} by Card`}
+              : paymentMethod === 'JazzCash'
+                ? 'Paid'
+                : `Pay PKR ${total.toFixed(0)} by Card`}
           </button>
+
+          {/* Upload screenshot section (moved to left side below Paid button) */}
+          {paymentMethod === 'JazzCash' && (
+            <div className="mt-4 border-t border-slate-100 pt-4">
+              <label className="block text-xs font-semibold text-slate-700 mb-2">
+                Upload Payment Receipt Screenshot <span className="text-red-500">*</span>
+              </label>
+              <div className="flex flex-col items-center gap-3">
+                {receiptPreview ? (
+                  <div className="relative group max-w-[200px] rounded border border-slate-200 overflow-hidden bg-slate-50">
+                    <img src={receiptPreview} alt="Receipt preview" className="w-full h-auto max-h-[150px] object-contain" />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setReceiptFile(null)
+                        setReceiptPreview('')
+                      }}
+                      className="absolute top-1 right-1 bg-red-600 hover:bg-red-700 text-white rounded-full p-1 text-xs shadow-md transition-colors"
+                      title="Remove image"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ) : (
+                  <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-slate-300 rounded-lg cursor-pointer bg-slate-50 hover:bg-slate-100 transition-colors">
+                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                      <span className="text-xl mb-1">📸</span>
+                      <p className="text-xs text-slate-500">
+                        <span className="font-semibold text-blue-600">Click to upload</span> screenshot
+                      </p>
+                    </div>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0]
+                        if (file) {
+                          setReceiptFile(file)
+                          setReceiptPreview(URL.createObjectURL(file))
+                        }
+                      }}
+                    />
+                  </label>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -318,6 +350,21 @@ function Checkout() {
             Payment: {PAYMENT_METHODS.find((m) => m.value === paymentMethod)?.label || paymentMethod}
           </p>
           <p className="text-xl font-bold text-blue-700">Total: PKR {total.toFixed(0)}</p>
+          {paymentMethod === 'JazzCash' && (
+            <div className="mt-4 border-t border-dashed border-slate-200 pt-4">
+              <p className="text-xs font-semibold text-slate-700 mb-2 text-center">Scan to Pay via JazzCash / Raast</p>
+              <div className="flex justify-center bg-white p-2 rounded-lg border border-slate-100 shadow-sm max-w-[240px] mx-auto">
+                <img 
+                  src="/images/jazzcash_qr.jpg" 
+                  alt="JazzCash QR Code" 
+                  className="w-full h-auto rounded"
+                />
+              </div>
+              <p className="mt-2 text-[10px] text-slate-500 text-center leading-relaxed">
+                Dial <span className="font-semibold">*786*10#</span> and enter Till ID <span className="font-semibold text-slate-700">983722180</span> to pay manually.
+              </p>
+            </div>
+          )}
         </div>
       </div>
       </div>

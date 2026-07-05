@@ -9,15 +9,18 @@ function NotificationDropdown({ notifications = [] }) {
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
-        className="relative rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50"
+        className="relative shrink-0 rounded-full border border-slate-200 bg-white px-2.5 py-1.5 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50"
+        aria-label={`Notifications (${notifications.length})`}
       >
-        Notifications
-        <span className="ml-2 rounded-full bg-blue-600 px-2 py-0.5 text-xs text-white">
-          {notifications.length}
-        </span>
+        <span aria-hidden="true">🔔</span>
+        {notifications.length > 0 ? (
+          <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-blue-600 px-1 text-[10px] font-bold text-white">
+            {notifications.length}
+          </span>
+        ) : null}
       </button>
       {open ? (
-        <div className="absolute right-0 z-20 mt-2 w-80 rounded-xl border border-slate-200 bg-white p-3 shadow-lg">
+        <div className="absolute right-0 z-20 mt-2 w-[min(20rem,calc(100vw-2rem))] rounded-xl border border-slate-200 bg-white p-3 shadow-lg">
           <h4 className="mb-2 text-sm font-semibold text-slate-900">Latest updates</h4>
           <div className="max-h-72 space-y-2 overflow-y-auto">
             {notifications.length ? (

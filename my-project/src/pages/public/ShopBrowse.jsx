@@ -27,6 +27,7 @@ function ShopBrowse() {
   )
 
   return (
+    <div className="mx-auto max-w-[983px]">
     <PageFrame
       title="Browse Verified Shops"
       description="Find trusted sellers and explore their storefronts."
@@ -64,6 +65,7 @@ function ShopBrowse() {
         )}
       </div>
     </PageFrame>
+    </div>
   )
 }
 

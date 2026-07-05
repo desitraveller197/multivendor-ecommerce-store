@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { useDispatch } from 'react-redux'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import Navbar from './components/Navbar'
+import Footer from './components/Footer'
 import { fetchProducts, fetchCategories } from './store/productSlice'
 import ProtectedRoute from './components/ProtectedRoute'
 import AdminDashboard from './pages/admin/AdminDashboard'
@@ -36,11 +37,13 @@ import SellerOrders from './pages/seller/SellerOrders'
 import WithdrawEarnings from './pages/seller/WithdrawEarnings'
 import Cart from './pages/public/Cart'
 import Home from './pages/public/Home'
+import GenericHome from './pages/public/GenericHome'
 import ProductDetail from './pages/public/ProductDetail'
 import ProductListing from './pages/public/ProductListing'
 import Regional from './pages/public/Regional'
 import ShopBrowse from './pages/public/ShopBrowse'
 import ShopPage from './pages/public/ShopPage'
+import Messages from './pages/customer/Messages'
 
 function App() {
   const dispatch = useDispatch()
@@ -52,11 +55,12 @@ function App() {
 
   return (
     <BrowserRouter>
-      <div className="app-shell-background min-h-screen">
+      <div className="app-shell-background min-h-screen w-full overflow-x-hidden">
         <Navbar />
-        <main className="mx-auto w-full max-w-7xl p-4 md:p-6">
+        <main className="mx-auto w-full max-w-7xl overflow-x-hidden p-4 md:p-6">
           <Routes>
             <Route path="/" element={<Home />} />
+            <Route path="/browse" element={<GenericHome />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -67,6 +71,15 @@ function App() {
             <Route path="/shops" element={<ShopBrowse />} />
             <Route path="/shops/:id" element={<ShopPage />} />
             <Route path="/cart" element={<Cart />} />
+
+            <Route
+              path="/messages"
+              element={
+                <ProtectedRoute roles={['customer', 'seller', 'admin']}>
+                  <Messages />
+                </ProtectedRoute>
+              }
+            />
 
             <Route
               path="/admin/dashboard"
@@ -290,6 +303,7 @@ function App() {
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>
+        <Footer />
       </div>
     </BrowserRouter>
   )

@@ -143,7 +143,10 @@ function Regional() {
     )
   }
 
+  const isFilterActive = selectedRegions.length > 0 || selectedCultures.length > 0
+
   const filteredProducts = useMemo(() => {
+    if (!isFilterActive) return []
     return enrichedProducts.filter((item) => {
       const regionMatch =
         selectedRegions.length === 0 ||
@@ -151,7 +154,7 @@ function Regional() {
       const cultureMatch = cultureFilterMatches(item, selectedCultures, item.culture)
       return regionMatch && cultureMatch
     })
-  }, [enrichedProducts, selectedRegions, selectedCultures])
+  }, [enrichedProducts, selectedRegions, selectedCultures, isFilterActive])
 
   const productsByCategory = useMemo(() => {
     const buckets = new Map()
@@ -232,7 +235,12 @@ function Regional() {
       <div className="grid gap-6 md:grid-cols-[260px,1fr]">
         <aside className="hidden md:block">{filtersPanel}</aside>
         <div className="space-y-10">
-          {productsByCategory.length === 0 ? (
+          {!isFilterActive ? (
+            <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50/50 p-12 text-center text-slate-500">
+              <p className="text-base font-semibold text-slate-700">Please select a region or culture to view products.</p>
+              <p className="mt-1 text-sm text-slate-400">Use the filters on the left to explore regional Pakistani crafts, apparel, and foods.</p>
+            </div>
+          ) : productsByCategory.length === 0 ? (
             <p className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
               No products match the selected filters. Try clearing filters or exploring another region or culture.
             </p>
@@ -240,7 +248,7 @@ function Regional() {
             productsByCategory.map(({ name, products: sectionProducts }) => (
               <div key={name}>
                 <h2 className="text-xl font-semibold text-slate-900">{name}</h2>
-                <div className="mt-4 grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   {sectionProducts.map((product) => (
                     <div key={`grid-${product.id}`} className="space-y-2">
                       <ProductCard product={product} onAddToCart={(item) => dispatch(addToCart(item))} />

@@ -23,7 +23,17 @@ const userSchema = new mongoose.Schema(
       trim: true,
       match: [/^\S+@\S+\.\S+$/, 'Please provide a valid email'],
     },
-    password: { type: String, required: true, select: false },
+    // Required only for local (email/password) accounts; OAuth users have none.
+    password: {
+      type: String,
+      select: false,
+      required: function requirePassword() {
+        return !this.provider || this.provider === 'local';
+      },
+    },
+    // How the account authenticates.
+    provider: { type: String, enum: ['local', 'google', 'facebook'], default: 'local' },
+    providerId: { type: String },
     role: {
       type: String,
       enum: ['admin', 'seller', 'customer'],

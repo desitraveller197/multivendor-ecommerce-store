@@ -73,7 +73,17 @@ function gatewayReturn(method) {
     let ok = false;
     try {
       const { valid, success, txnRef } = gateway.verifyResponse(method, body);
+      // ─── TEMP DEBUG: inspect what the gateway posted back ───
+      console.log(`\n[${method} RETURN] raw body:`, JSON.stringify(body, null, 2));
+      console.log(`[${method} RETURN] verify =>`, {
+        valid,
+        success,
+        txnRef,
+        pp_ResponseCode: body.pp_ResponseCode,
+        pp_ResponseMessage: body.pp_ResponseMessage,
+      });
       order = await Order.findOne({ gatewayTxnRef: txnRef }).populate('customer', 'name email');
+      console.log(`[${method} RETURN] order found:`, Boolean(order));
       if (order && valid && success) {
         await finalizeOrder(order, { id: txnRef, status: 'completed' });
         ok = true;
@@ -115,9 +125,50 @@ async function simulateReturn(req, res) {
   redirectToClient(res, ok, orderId);
 }
 
+async function stripeSuccess(req, res) {
+  const { orderId, session_id } = req.query;
+  let ok = false;
+  let order = null;
+  try {
+    order = await Order.findById(orderId).populate('customer', 'name email');
+    if (order) {
+      if (process.env.STRIPE_SECRET_KEY && session_id) {
+        const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+        const session = await stripe.checkout.sessions.retrieve(session_id);
+        if (session.payment_status === 'paid') {
+          await finalizeOrder(order, { id: session.payment_intent, status: 'completed' });
+          ok = true;
+        }
+      } else {
+        await finalizeOrder(order, { id: 'simulated_stripe_' + orderId, status: 'simulated' });
+        ok = true;
+      }
+    }
+  } catch (err) {
+    console.error('Stripe success callback error:', err.message);
+  }
+  redirectToClient(res, ok, orderId);
+}
+
+async function stripeCancel(req, res) {
+  const { orderId } = req.query;
+  try {
+    const order = await Order.findById(orderId);
+    if (order && order.orderStatus === 'Pending') {
+      order.orderStatus = 'Cancelled';
+      await order.save();
+    }
+  } catch (err) {
+    console.error('Stripe cancel callback error:', err.message);
+  }
+  redirectToClient(res, false, orderId);
+}
+
 module.exports = {
   finalizeOrder,
   jazzcashReturn: gatewayReturn('JazzCash'),
   easypaisaReturn: gatewayReturn('Easypaisa'),
   simulateReturn,
+  stripeSuccess,
+  stripeCancel,
 };

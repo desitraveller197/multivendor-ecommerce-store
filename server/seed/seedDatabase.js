@@ -17,6 +17,8 @@ const User = require('../models/User');
 const Shop = require('../models/Shop');
 const Product = require('../models/Product');
 const Category = require('../models/Category');
+const Review = require('../models/Review');
+const { buildFilterFields } = require('../utils/productFilterUtils');
 
 /**
  * Load the products array out of the frontend's ESM mockData.js without importing it.
@@ -148,6 +150,7 @@ async function seed() {
     Shop.deleteMany({}),
     Product.deleteMany({}),
     Category.deleteMany({}),
+    Review.deleteMany({}),
   ]);
 
   // ─── Categories ───────────────────────────────────────────────────────────
@@ -164,7 +167,7 @@ async function seed() {
     isApproved: true,
   });
 
-  await User.create({
+  const demoCustomer = await User.create({
     name: 'Demo Customer',
     email: 'customer@store.pk',
     password: 'customer123',
@@ -201,6 +204,7 @@ async function seed() {
 
   const docs = mockProducts.map((p) => {
     const entry = shopMap[p.seller] || defaultShopEntry;
+    const filterFields = buildFilterFields(p);
     return {
       name: p.name,
       description: p.description || p.name,
@@ -211,6 +215,9 @@ async function seed() {
       category: p.category || '',
       region: p.region,
       culture: p.culture,
+      colorFamilies: filterFields.colorFamilies,
+      seasons: filterFields.seasons,
+      variants: filterFields.variants,
       rating: Number(p.rating) || 0,
       seller: entry.sellerUser._id,
       shop: entry.shop._id,
@@ -219,11 +226,48 @@ async function seed() {
     };
   });
 
-  await Product.insertMany(docs);
+  const insertedProducts = await Product.insertMany(docs);
+
+  // ─── Sample product reviews ───────────────────────────────────────────────
+  console.log('⭐  Seeding product reviews…');
+  const sampleReviewTexts = [
+  { rating: 5, title: 'Excellent quality', comment: 'Beautiful craftsmanship and fast delivery. Highly recommend!' },
+  { rating: 5, title: 'Authentic product', comment: 'Exactly as described — genuine regional product with great packaging.' },
+  { rating: 4, title: 'Great value', comment: 'Good quality for the price. Will definitely order again from this seller.' },
+  { rating: 5, title: 'Loved it!', comment: 'My family loved this purchase. True Pakistani heritage quality.' },
+  { rating: 4, title: 'Very satisfied', comment: 'Nice product, arrived on time. Seller was responsive and helpful.' },
+  { rating: 5, title: 'Perfect gift', comment: 'Bought this as a gift and it was a huge hit. Stunning details!' },
+  ];
+
+  const reviewProducts = [...insertedProducts]
+    .sort((a, b) => (b.rating || 0) - (a.rating || 0))
+    .slice(0, sampleReviewTexts.length);
+
+  const reviewDocs = reviewProducts.map((product, index) => ({
+    product: product._id,
+    customer: demoCustomer._id,
+    rating: sampleReviewTexts[index].rating,
+    title: sampleReviewTexts[index].title,
+    comment: sampleReviewTexts[index].comment,
+  }));
+
+  if (reviewDocs.length > 0) {
+    await Review.insertMany(reviewDocs);
+    for (const product of reviewProducts) {
+      const productReviews = reviewDocs.filter((r) => String(r.product) === String(product._id));
+      const avg =
+        productReviews.reduce((sum, r) => sum + r.rating, 0) / productReviews.length;
+      await Product.findByIdAndUpdate(product._id, {
+        rating: Math.round(avg * 10) / 10,
+        numReviews: productReviews.length,
+      });
+    }
+  }
 
   // ─── Summary ──────────────────────────────────────────────────────────────
   console.log(`\n✅  Seed complete!`);
   console.log(`   Products  : ${docs.length}`);
+  console.log(`   Reviews   : ${reviewDocs.length}`);
   console.log(`   Shops     : ${DEMO_SELLERS.length}`);
   console.log(`   Categories: ${DEFAULT_CATEGORIES.length}`);
   console.log('\n🔑  Login Credentials:');

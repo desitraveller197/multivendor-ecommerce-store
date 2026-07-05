@@ -216,7 +216,7 @@ async function seedSindhiProducts() {
   }
 
   // 6) Clear existing products to avoid duplicates
-  const deleted = await Product.deleteMany({});
+  const deleted = await Product.deleteMany({ seller: sellerUser._id });
   console.log(`🗑️  Cleared ${deleted.deletedCount} old products from database`);
 
   // 7) Insert all products

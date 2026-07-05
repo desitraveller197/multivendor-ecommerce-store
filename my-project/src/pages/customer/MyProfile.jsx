@@ -107,6 +107,7 @@ function MyProfile() {
   const inputClass = 'w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 disabled:bg-slate-50 disabled:text-slate-400'
 
   return (
+    <div className="mx-auto max-w-[983px]">
     <PageFrame title="My Profile" description="Manage your account details and password.">
       <section className="rounded-lg bg-white p-6 shadow-sm">
       {loading ? (
@@ -225,6 +226,7 @@ function MyProfile() {
       {passwordError && <p className="mt-2 text-sm text-red-500">{passwordError}</p>}
       </section>
     </PageFrame>
+    </div>
   )
 }
 

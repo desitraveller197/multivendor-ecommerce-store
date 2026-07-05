@@ -1,12 +1,49 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import PageFrame from '../../components/PageFrame'
 import ProductCard from '../../components/ProductCard'
 import { addToCart } from '../../store/cartSlice'
 
 const PER_PAGE = 8
 const PRICE_STEP = 500
+
+const SIZE_FILTER_OPTIONS = ['XS', 'S', 'M', 'L', 'XL']
+const COLOR_FILTER_OPTIONS = ['Black', 'White', 'Blue', 'Red', 'Green', 'Brown', 'Pink', 'Gold']
+const SEASON_FILTER_OPTIONS = ['Winter', 'Summer', 'Spring', 'Autumn']
+
+const SIZE_ALIASES = {
+  'extra small': 'XS',
+  xs: 'XS',
+  small: 'S',
+  s: 'S',
+  large: 'L',
+  l: 'L',
+  'extra large': 'XL',
+  xl: 'XL',
+}
+
+function normalizeSize(value) {
+  const key = String(value || '').trim().toLowerCase()
+  return SIZE_ALIASES[key] || null
+}
+
+function getProductSizes(product) {
+  const sizes = new Set()
+  for (const variant of product.variants || []) {
+    const normalized = normalizeSize(variant.size)
+    if (normalized) sizes.add(normalized)
+  }
+  return [...sizes]
+}
+
+function getProductColorFamilies(product) {
+  return Array.isArray(product.colorFamilies) ? product.colorFamilies : []
+}
+
+function getProductSeasons(product) {
+  return Array.isArray(product.seasons) ? product.seasons : []
+}
 
 function clamp(n, lo, hi) {
   return Math.min(hi, Math.max(lo, n))
@@ -18,6 +55,27 @@ function getEffectivePrice(product) {
 
 function formatPkr(n) {
   return `PKR ${Math.round(n).toLocaleString('en-PK')}`
+}
+
+function CheckboxFilterGroup({ title, options, selected, onToggle }) {
+  return (
+    <div className="rounded-lg border border-slate-200 bg-white p-4">
+      <h3 className="text-sm font-semibold text-slate-900">{title}</h3>
+      <div className="mt-3 space-y-2">
+        {options.map((option) => (
+          <label key={option} className="flex cursor-pointer items-center gap-2 text-sm text-slate-700">
+            <input
+              type="checkbox"
+              className="h-4 w-4 rounded border-slate-300 text-blue-600"
+              checked={selected.includes(option)}
+              onChange={() => onToggle(option)}
+            />
+            <span>{option}</span>
+          </label>
+        ))}
+      </div>
+    </div>
+  )
 }
 
 /** Number buttons with ellipses for large page counts (e.g. 1 … 4 5 6 … 12). */
@@ -146,12 +204,23 @@ function PriceRangeControl({
 function ProductListing() {
   const dispatch = useDispatch()
   const { items, categories } = useSelector((state) => state.products)
+  const [searchParams] = useSearchParams()
   const extent = useCatalogPriceExtent(items)
+  const categoryOptions = useMemo(() => {
+    const known = categories.filter(Boolean)
+    const extra = [...new Set(items.map((item) => item.category).filter(Boolean))].filter(
+      (item) => !known.includes(item),
+    )
+    return [...known, ...extra]
+  }, [categories, items])
 
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState('all')
   const [minPrice, setMinPrice] = useState(extent.min)
   const [maxPrice, setMaxPrice] = useState(extent.max)
+  const [selectedSizes, setSelectedSizes] = useState([])
+  const [selectedColors, setSelectedColors] = useState([])
+  const [selectedSeasons, setSelectedSeasons] = useState([])
   const [sortBy, setSortBy] = useState('default')
   const [page, setPage] = useState(1)
 
@@ -159,6 +228,12 @@ function ProductListing() {
     setMinPrice(extent.min)
     setMaxPrice(extent.max)
   }, [extent.min, extent.max])
+
+  useEffect(() => {
+    const initialCategory = searchParams.get('category')
+    if (!initialCategory) return
+    setCategory(initialCategory)
+  }, [searchParams])
 
   const clampMin = (v) => {
     const hi = Math.max(extent.min, maxPrice - PRICE_STEP)
@@ -169,17 +244,36 @@ function ProductListing() {
     return clamp(v, lo, extent.max)
   }
 
+  const toggleFromList = (value, setter) => {
+    setter((current) =>
+      current.includes(value) ? current.filter((item) => item !== value) : [...current, value],
+    )
+    setPage(1)
+  }
+
   const filteredSorted = useMemo(() => {
     const catIndex = (c) => {
       const i = categories.indexOf(c)
       return i === -1 ? 999 : i
     }
     const list = items.filter((product) => {
-      const matchQuery = product.name.toLowerCase().includes(query.toLowerCase())
-      const matchCategory = category === 'all' || product.category === category
+      const productSizes = getProductSizes(product)
+      const productColors = getProductColorFamilies(product)
+      const productSeasons = getProductSeasons(product)
+      const matchQuery = `${product.name || ''} ${product.description || ''}`
+        .toLowerCase()
+        .includes(query.toLowerCase())
+      const matchCategory = category === 'all' || (product.category || '') === category
       const price = getEffectivePrice(product)
       const matchPrice = price >= minPrice && price <= maxPrice
-      return matchQuery && matchCategory && matchPrice
+      const matchSize =
+        selectedSizes.length === 0 || selectedSizes.some((size) => productSizes.includes(size))
+      const matchColor =
+        selectedColors.length === 0 || selectedColors.some((color) => productColors.includes(color))
+      const matchSeason =
+        selectedSeasons.length === 0 ||
+        selectedSeasons.some((season) => productSeasons.includes(season))
+      return matchQuery && matchCategory && matchPrice && matchSize && matchColor && matchSeason
     })
 
     list.sort((a, b) => {
@@ -191,7 +285,7 @@ function ProductListing() {
       return a.name.localeCompare(b.name)
     })
     return list
-  }, [items, query, category, minPrice, maxPrice, categories, sortBy])
+  }, [items, query, category, minPrice, maxPrice, selectedSizes, selectedColors, selectedSeasons, categories, sortBy])
 
   const totalPages = Math.max(1, Math.ceil(filteredSorted.length / PER_PAGE))
   const pageClamped = Math.min(page, totalPages)
@@ -203,6 +297,17 @@ function ProductListing() {
   }, [page, totalPages])
 
   const resetPriceRange = () => {
+    setMinPrice(extent.min)
+    setMaxPrice(extent.max)
+    setPage(1)
+  }
+
+  const clearAllFilters = () => {
+    setQuery('')
+    setCategory('all')
+    setSelectedSizes([])
+    setSelectedColors([])
+    setSelectedSeasons([])
     setMinPrice(extent.min)
     setMaxPrice(extent.max)
     setPage(1)
@@ -236,14 +341,15 @@ function ProductListing() {
   )
 
   return (
+    <div className="mx-auto w-full max-w-7xl px-2 sm:px-4 lg:px-6">
     <PageFrame
       title="All Products"
-      description="Browse the full catalog. Search, pick a category, set one price range, and sort results—same layout as the rest of the store."
+      description="Browse the full catalog. Use the filters on the left to narrow products by category, size, color family, season, and price."
       actions={sortSelect}
     >
-      <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm md:p-6">
-        <div className="grid gap-6 lg:grid-cols-12 lg:items-end">
-          <div className="space-y-4 lg:col-span-5">
+      <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
+        <aside className="space-y-4 self-start">
+          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm md:p-5">
             <div>
               <label htmlFor="product-search" className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                 Search
@@ -260,7 +366,8 @@ function ProductListing() {
                 }}
               />
             </div>
-            <div>
+
+            <div className="mt-4">
               <label htmlFor="filter-category" className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                 Category
               </label>
@@ -274,34 +381,61 @@ function ProductListing() {
                 }}
               >
                 <option value="all">All categories</option>
-                {categories.map((item) => (
+                {categoryOptions.map((item) => (
                   <option key={item} value={item}>
                     {item}
                   </option>
                 ))}
               </select>
             </div>
+
+            <div className="mt-4">
+              <PriceRangeControl
+                extent={extent}
+                minPrice={minPrice}
+                maxPrice={maxPrice}
+                onMinChange={(v) => {
+                  setPage(1)
+                  setMinPrice(clampMin(v))
+                }}
+                onMaxChange={(v) => {
+                  setPage(1)
+                  setMaxPrice(clampMax(v))
+                }}
+                onReset={resetPriceRange}
+              />
+            </div>
           </div>
 
-          <div className="lg:col-span-7">
-            <PriceRangeControl
-              extent={extent}
-              minPrice={minPrice}
-              maxPrice={maxPrice}
-              onMinChange={(v) => {
-                setPage(1)
-                setMinPrice(clampMin(v))
-              }}
-              onMaxChange={(v) => {
-                setPage(1)
-                setMaxPrice(clampMax(v))
-              }}
-              onReset={resetPriceRange}
-            />
-          </div>
-        </div>
+          <CheckboxFilterGroup
+            title="Size"
+            options={SIZE_FILTER_OPTIONS}
+            selected={selectedSizes}
+            onToggle={(value) => toggleFromList(value, setSelectedSizes)}
+          />
+          <CheckboxFilterGroup
+            title="Color Family"
+            options={COLOR_FILTER_OPTIONS}
+            selected={selectedColors}
+            onToggle={(value) => toggleFromList(value, setSelectedColors)}
+          />
+          <CheckboxFilterGroup
+            title="Season"
+            options={SEASON_FILTER_OPTIONS}
+            selected={selectedSeasons}
+            onToggle={(value) => toggleFromList(value, setSelectedSeasons)}
+          />
 
-        <div className="mt-6 border-t border-slate-100 pt-6">
+          <button
+            type="button"
+            className="w-full rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50"
+            onClick={clearAllFilters}
+          >
+            Clear all filters
+          </button>
+        </aside>
+
+        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm md:p-6">
           <p className="text-sm text-slate-600">
             Showing <span className="font-semibold text-slate-900">{filteredSorted.length}</span> product
             {filteredSorted.length === 1 ? '' : 's'}
@@ -383,6 +517,7 @@ function ProductListing() {
         </div>
       </div>
     </PageFrame>
+    </div>
   )
 }
 

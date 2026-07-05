@@ -14,6 +14,7 @@ function Cart() {
   const getItemId = (item) => item._id || item.id
 
   return (
+    <div className="mx-auto max-w-[983px]">
     <PageFrame title="Your Cart" description="Review your items, adjust quantities, and proceed to checkout.">
       <section className="rounded-lg bg-white p-6 shadow-sm">
       <div className="space-y-3">
@@ -96,6 +97,7 @@ function Cart() {
       )}
       </section>
     </PageFrame>
+    </div>
   )
 }
 

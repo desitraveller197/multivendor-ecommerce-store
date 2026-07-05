@@ -2,6 +2,7 @@ const asyncHandler = require('../utils/asyncHandler');
 const Order = require('../models/Order');
 const Product = require('../models/Product');
 const gateway = require('../utils/paymentGateway');
+const { finalizeOrder } = require('./paymentController');
 
 const FREE_SHIPPING_THRESHOLD = 5000; // PKR
 const FLAT_SHIPPING = 200; // PKR
@@ -25,6 +26,7 @@ function presentOrder(order) {
     date: order.createdAt,
     paymentMethod: order.paymentMethod,
     isPaid: order.isPaid,
+    paymentReceipt: order.paymentReceipt || '',
     customer: customerName,
     address: {
       street: order.shippingAddress?.street || '',
@@ -38,21 +40,23 @@ function presentOrder(order) {
       quantity: it.qty,
       price: it.price,
       image: it.image,
+      sellerId: it.seller,
     })),
   };
 }
 
 // POST /api/orders  (customer) — creates Order + Stripe PaymentIntent
 const createOrder = asyncHandler(async (req, res) => {
-  const { items, address, paymentMethod, orderId } = req.body;
+  const { items, address, paymentMethod, orderId, paymentReceipt } = req.body;
 
   if (!Array.isArray(items) || items.length === 0) {
     res.status(400);
     throw new Error('No order items provided');
   }
 
-  // Online card payments settle to the Easypaisa merchant account; COD is cash.
-  const method = paymentMethod === 'COD' ? 'COD' : 'Easypaisa';
+  // Honour the selected gateway; unknown values fall back to Easypaisa. COD is cash.
+  const ALLOWED_METHODS = ['COD', 'Easypaisa', 'JazzCash', 'Stripe'];
+  const method = ALLOWED_METHODS.includes(paymentMethod) ? paymentMethod : 'Easypaisa';
 
   // Re-fetch every product from DB — never trust client prices.
   const orderItems = [];
@@ -102,6 +106,7 @@ const createOrder = asyncHandler(async (req, res) => {
       order.shippingPrice = shippingPrice;
       order.taxPrice = taxPrice;
       order.totalPrice = totalPrice;
+      order.paymentReceipt = paymentReceipt || '';
       await order.save();
     } else {
       order = null;
@@ -124,6 +129,7 @@ const createOrder = asyncHandler(async (req, res) => {
       taxPrice,
       totalPrice,
       orderStatus: 'Pending',
+      paymentReceipt: paymentReceipt || '',
     });
   }
 
@@ -139,22 +145,74 @@ const createOrder = asyncHandler(async (req, res) => {
     return res.status(201).json({ orderId: order._id, payment: { type: 'cod' } });
   }
 
+  // JazzCash: manual payment receipt upload. Wait for seller manual review.
+  if (order.paymentMethod === 'JazzCash') {
+    return res.status(201).json({ orderId: order._id, payment: { type: 'manual_receipt' } });
+  }
+
+  // Stripe Checkout Session Creation
+  if (order.paymentMethod === 'Stripe') {
+    console.log('DEBUG STRIPE KEY:', {
+      hasKey: Boolean(process.env.STRIPE_SECRET_KEY),
+      keyPrefix: process.env.STRIPE_SECRET_KEY ? process.env.STRIPE_SECRET_KEY.slice(0, 10) : 'none'
+    });
+    if (!process.env.STRIPE_SECRET_KEY) {
+      // Settle immediately for demo if no secret key is present
+      await order.populate('customer', 'name email');
+      await finalizeOrder(order, { id: 'simulated_stripe_' + order._id, status: 'simulated' });
+      return res.status(201).json({ orderId: order._id, payment: { type: 'paid' } });
+    }
+
+    try {
+      const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+      const session = await stripe.checkout.sessions.create({
+        payment_method_types: ['card'],
+        line_items: [
+          {
+            price_data: {
+              currency: 'pkr',
+              product_data: {
+                name: `Order #${order._id}`,
+                description: `Payment for Order #${order._id} at Bazarix Store`,
+              },
+              unit_amount: totalPrice * 100, // Stripe expects amount in cents/paisa
+            },
+            quantity: 1,
+          },
+        ],
+        mode: 'payment',
+        success_url: `http://localhost:${process.env.PORT || 5000}/api/payment/stripe/success?orderId=${order._id}&session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `http://localhost:${process.env.PORT || 5000}/api/payment/stripe/cancel?orderId=${order._id}`,
+        metadata: {
+          orderId: order._id.toString(),
+        },
+      });
+
+      order.stripePaymentIntentId = session.id; // Store session ID for reference
+      await order.save();
+
+      return res.status(201).json({
+        orderId: order._id,
+        payment: { type: 'stripe_redirect', url: session.url },
+      });
+    } catch (err) {
+      res.status(500);
+      throw new Error(`Stripe session creation failed: ${err.message}`);
+    }
+  }
+
   // Gateway (JazzCash / Easypaisa): generate a txn reference for this attempt.
   const txnRef = `T${gateway.formatDateTime(new Date())}${Math.floor(1000 + Math.random() * 9000)}`;
   order.gatewayTxnRef = txnRef;
   await order.save();
 
-  // Without live credentials, fall back to a simulated success so the flow
-  // still works in development. Configure the gateway env vars to go live.
+  // Without live credentials, settle the order immediately (demo) and let the
+  // SPA route to its own success page — avoids cross-origin/port redirects.
+  // Configure the gateway env vars to use the real hosted-checkout flow.
   if (!gateway.isConfigured(order.paymentMethod)) {
-    return res.status(201).json({
-      orderId: order._id,
-      payment: {
-        type: 'simulate',
-        method: order.paymentMethod,
-        url: `${serverBaseUrl()}/api/payment/simulate?orderId=${order._id}&status=success`,
-      },
-    });
+    await order.populate('customer', 'name email');
+    await finalizeOrder(order, { id: order.gatewayTxnRef, status: 'simulated' });
+    return res.status(201).json({ orderId: order._id, payment: { type: 'paid' } });
   }
 
   const returnUrl = `${serverBaseUrl()}/api/payment/${order.paymentMethod.toLowerCase()}/return`;
@@ -223,11 +281,33 @@ const updateOrderStatus = asyncHandler(async (req, res) => {
     res.status(403);
     throw new Error('Not authorized to update this order');
   }
+
+  const oldStatus = order.orderStatus;
   order.orderStatus = status;
+
   if (status === 'Delivered') {
     order.isDelivered = true;
     order.deliveredAt = new Date();
   }
+
+  // Settle payment, decrement stock and record revenue when moving to Processing/Shipped/Delivered
+  const isConfirming = ['Pending', 'Cancelled'].includes(oldStatus) && ['Processing', 'Shipped', 'Delivered'].includes(status);
+  if (isConfirming && !order.isPaid) {
+    order.isPaid = true;
+    order.paidAt = new Date();
+
+    const Shop = require('../models/Shop');
+    for (const item of order.orderItems) {
+      await Product.updateOne({ _id: item.product }, { $inc: { stock: -item.qty } });
+      if (item.shop) {
+        await Shop.updateOne(
+          { _id: item.shop },
+          { $inc: { totalRevenue: item.price * item.qty, totalOrders: 1 } }
+        );
+      }
+    }
+  }
+
   await order.save();
   res.json(presentOrder(order));
 });

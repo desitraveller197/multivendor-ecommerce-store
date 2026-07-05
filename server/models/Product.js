@@ -19,6 +19,8 @@ const productSchema = new mongoose.Schema(
     category: { type: String, default: '' },
     region: { type: String },
     culture: { type: String },
+    colorFamilies: { type: [String], default: [] },
+    seasons: { type: [String], default: [] },
     rating: { type: Number, default: 0 },
     numReviews: { type: Number, default: 0 },
     isPublished: { type: Boolean, default: true },

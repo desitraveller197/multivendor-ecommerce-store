@@ -1,11 +1,12 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { useParams, useNavigate } from 'react-router-dom'
 import { addToCart } from '../../store/cartSlice'
 import { addToWishlist, removeFromWishlist } from '../../store/wishlistSlice'
 import VariantSelector from '../../components/VariantSelector'
 import StarRating from '../../components/StarRating'
-import { reviews } from '../../data/mockData'
+import StartChatButton from '../../components/StartChatButton'
+import axiosInstance from '../../api/axiosConfig'
 
 function ProductDetail() {
   const { id } = useParams()
@@ -16,6 +17,30 @@ function ProductDetail() {
   const product = products.find((item) => String(item.id) === id)
   const [size, setSize] = useState('')
   const [quantity, setQuantity] = useState(1)
+  const [productReviews, setProductReviews] = useState([])
+  const [reviewsLoading, setReviewsLoading] = useState(true)
+
+  useEffect(() => {
+    if (!id) return
+    let cancelled = false
+
+    async function loadReviews() {
+      setReviewsLoading(true)
+      try {
+        const res = await axiosInstance.get(`/reviews/product/${id}`)
+        if (!cancelled) setProductReviews(res.data || [])
+      } catch {
+        if (!cancelled) setProductReviews([])
+      } finally {
+        if (!cancelled) setReviewsLoading(false)
+      }
+    }
+
+    loadReviews()
+    return () => {
+      cancelled = true
+    }
+  }, [id])
 
   // Cap the quantity at available stock when the product tracks it.
   const maxQty = product?.stock > 0 ? product.stock : 99
@@ -52,8 +77,6 @@ function ProductDetail() {
     return <p className="rounded bg-white p-5 text-slate-600">Product not found.</p>
   }
 
-  const productReviews = reviews.filter((item) => item.productId === product.id)
-
   return (
     <div className="space-y-4">
       <button
@@ -81,6 +104,10 @@ function ProductDetail() {
 
         <div className="rounded-lg bg-white p-5 shadow-sm">
           <h1 className="text-2xl font-bold text-slate-900">{product.name}</h1>
+          <div className="mt-2 flex items-center gap-2">
+            <StarRating value={product.rating || 0} size="md" showValue />
+            <span className="text-sm text-slate-500">({product.numReviews || 0} reviews)</span>
+          </div>
           <p className="mt-2 text-slate-600">{product.description}</p>
           <p className="mt-4 text-2xl font-bold text-blue-700">PKR {product.discountPrice}</p>
           {sizeOptions.length > 0 && (
@@ -123,13 +150,20 @@ function ProductDetail() {
             )}
           </div>
 
-          <div className="mt-6 flex items-center gap-3">
+          <div className="mt-6 flex flex-wrap items-center gap-3">
             <button
               className="rounded-md bg-blue-600 px-5 py-2 text-sm font-semibold text-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:bg-blue-700 hover:shadow-md"
               onClick={() => dispatch(addToCart({ ...product, selectedSize, quantity }))}
             >
               Add to Cart
             </button>
+            <StartChatButton
+              recipientId={product.seller}
+              type="buyer_seller"
+              productId={product.id}
+              subject={`About ${product.name}`}
+              label="Message Seller"
+            />
             <button
               className={`rounded-md border px-5 py-2 text-sm font-semibold shadow-sm transition ${
                 isWishlisted
@@ -144,15 +178,26 @@ function ProductDetail() {
 
         <div className="mt-6">
           <h2 className="text-lg font-semibold text-slate-900">Reviews</h2>
-          <div className="mt-2 space-y-2">
-            {productReviews.map((review) => (
-              <div key={review.id} className="rounded border border-slate-200 p-3">
-                <p className="font-medium text-slate-800">{review.user}</p>
-                <StarRating value={review.rating} />
-                <p className="text-sm text-slate-600">{review.comment}</p>
-              </div>
-            ))}
-          </div>
+          {reviewsLoading ? (
+            <p className="mt-2 text-sm text-slate-500">Loading reviews…</p>
+          ) : productReviews.length > 0 ? (
+            <div className="mt-3 space-y-3">
+              {productReviews.map((review) => (
+                <div key={review.id} className="rounded-lg border border-slate-200 bg-slate-50/50 p-4">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className="font-medium text-slate-800">{review.customerName || 'Customer'}</p>
+                    <StarRating value={review.rating} size="md" showValue />
+                  </div>
+                  {review.title ? (
+                    <p className="mt-2 text-sm font-medium text-slate-700">{review.title}</p>
+                  ) : null}
+                  <p className="mt-1 text-sm text-slate-600">{review.comment}</p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="mt-2 text-sm text-slate-500">No reviews yet for this product.</p>
+          )}
         </div>
       </div>
     </section>

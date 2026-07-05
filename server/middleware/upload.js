@@ -3,16 +3,27 @@ const fs = require('fs');
 const crypto = require('crypto');
 const multer = require('multer');
 
-const UPLOAD_DIR = path.join(__dirname, '..', process.env.UPLOAD_DIR || 'uploads');
-if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+// In serverless (Vercel), the filesystem is read-only except /tmp
+const isServerless = !!process.env.VERCEL;
+const UPLOAD_DIR = isServerless
+  ? '/tmp/uploads'
+  : path.join(__dirname, '..', process.env.UPLOAD_DIR || 'uploads');
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, UPLOAD_DIR),
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    cb(null, `${Date.now()}-${crypto.randomBytes(6).toString('hex')}${ext}`);
-  },
-});
+try {
+  if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+} catch (err) {
+  console.warn('Could not create upload dir (read-only fs):', err.message);
+}
+
+const storage = isServerless
+  ? multer.memoryStorage()
+  : multer.diskStorage({
+      destination: (req, file, cb) => cb(null, UPLOAD_DIR),
+      filename: (req, file, cb) => {
+        const ext = path.extname(file.originalname);
+        cb(null, `${Date.now()}-${crypto.randomBytes(6).toString('hex')}${ext}`);
+      },
+    });
 
 const ALLOWED = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 
@@ -26,3 +37,4 @@ const upload = multer({
 });
 
 module.exports = upload;
+

@@ -69,6 +69,7 @@ function MyOrders() {
   }
 
   return (
+    <div className="mx-auto max-w-[983px]">
     <PageFrame title="My Orders" description="Track the status of your past and current orders.">
       <section className="rounded-lg bg-white p-6 shadow-sm">
       {flashMessage ? (
@@ -126,6 +127,7 @@ function MyOrders() {
       </div>
       </section>
     </PageFrame>
+    </div>
   )
 }
 

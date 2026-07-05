@@ -5,3 +5,5 @@ uploads/*
 coverage/
 *.log
 .DS_Store
+
+.vercel

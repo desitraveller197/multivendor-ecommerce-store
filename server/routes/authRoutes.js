@@ -25,6 +25,10 @@ router.post(
   ctrl.login
 );
 
+// Social login (Google / Facebook) — verified server-side, returns our JWT.
+router.post('/google', ctrl.googleLogin);
+router.post('/facebook', ctrl.facebookLogin);
+
 router.get('/profile', protect, ctrl.getProfile);
 router.put('/profile', protect, ctrl.updateProfile);
 router.put(

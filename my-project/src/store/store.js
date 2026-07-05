@@ -8,6 +8,7 @@ import paymentReducer from './paymentSlice'
 import productReducer from './productSlice'
 import sellerReducer from './sellerSlice'
 import wishlistReducer from './wishlistSlice'
+import chatReducer from './chatSlice'
 
 export const store = configureStore({
   reducer: {
@@ -20,5 +21,6 @@ export const store = configureStore({
     admin: adminReducer,
     notifications: notificationReducer,
     payments: paymentReducer,
+    chat: chatReducer,
   },
 })

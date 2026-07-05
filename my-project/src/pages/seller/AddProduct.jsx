@@ -1,19 +1,32 @@
 import { useState } from 'react'
-import { useDispatch } from 'react-redux'
+import { useDispatch, useSelector } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
 import Sidebar from '../../components/Sidebar'
 import PageFrame from '../../components/PageFrame'
 import SizeSelector from '../../components/SizeSelector'
+import MultiSelectChips from '../../components/MultiSelectChips'
 import { addProduct, fetchProducts } from '../../store/productSlice'
 import axiosInstance from '../../api/axiosConfig'
 import { USE_MOCK, delay } from '../../api/mockApi'
 
 // Regions used by the storefront's Regional filter (must match those labels).
 const REGION_OPTIONS = ['Punjab', 'Sindh', 'KPK', 'Balochistan']
+const COLOR_FAMILY_OPTIONS = ['Black', 'White', 'Blue', 'Red', 'Green', 'Brown', 'Pink', 'Gold']
+const SEASON_OPTIONS = ['Winter', 'Summer', 'Spring', 'Autumn']
 
 function AddProduct() {
   const dispatch = useDispatch()
   const navigate = useNavigate()
+  
+  const categories = useSelector((state) => state.products.categories)
+  const categoryOptions = categories.length > 0 ? categories : [
+    'Clothing',
+    'Shawls & Dupattas',
+    'Footwear (Chappals)',
+    'Handicrafts & Decor',
+    'Organic Beauty',
+    'Local Foods'
+  ]
   
   const [selectedFile, setSelectedFile] = useState(null)
   const [previewUrl, setPreviewUrl] = useState('')
@@ -31,6 +44,8 @@ function AddProduct() {
     stock: 0,
     image: '',
     sizes: [],
+    colorFamilies: [],
+    seasons: [],
   })
 
   const handleSubmit = async (event) => {
@@ -56,10 +71,12 @@ function AddProduct() {
       
       setSubmitLabel('Saving product...')
       // Persist selected sizes as schema-shaped variants ({ size }).
-      const { sizes, ...rest } = form
+      const { sizes, colorFamilies, seasons, ...rest } = form
       const payload = {
         ...rest,
         variants: sizes.map((size) => ({ size })),
+        colorFamilies,
+        seasons,
         image: imageUrl,
         seller: 'My Shop',
         rating: 0,
@@ -97,12 +114,19 @@ function AddProduct() {
           </div>
           <div className="flex flex-col gap-1">
             <label className="text-sm font-medium text-slate-700">Category</label>
-            <input
+            <select
               required
-              placeholder="e.g. Clothing"
-              className="w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              value={form.category}
+              className="w-full rounded border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               onChange={(event) => setForm((prev) => ({ ...prev, category: event.target.value }))}
-            />
+            >
+              <option value="">Select category…</option>
+              {categoryOptions.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
+              ))}
+            </select>
           </div>
           <div className="flex flex-col gap-1">
             <label className="text-sm font-medium text-slate-700">Region</label>
@@ -190,6 +214,24 @@ function AddProduct() {
             <SizeSelector
               selected={form.sizes}
               onChange={(sizes) => setForm((prev) => ({ ...prev, sizes }))}
+            />
+          </div>
+          <div className="col-span-full">
+            <MultiSelectChips
+              title="Color Families"
+              description="Select the main color families customers can filter by."
+              options={COLOR_FAMILY_OPTIONS}
+              selected={form.colorFamilies}
+              onChange={(colorFamilies) => setForm((prev) => ({ ...prev, colorFamilies }))}
+            />
+          </div>
+          <div className="col-span-full">
+            <MultiSelectChips
+              title="Season"
+              description="Choose the seasons this product is most suitable for."
+              options={SEASON_OPTIONS}
+              selected={form.seasons}
+              onChange={(seasons) => setForm((prev) => ({ ...prev, seasons }))}
             />
           </div>
         </div>
