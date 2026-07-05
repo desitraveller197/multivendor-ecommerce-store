@@ -344,6 +344,26 @@ function ProductListing() {
       if (ca !== cb) return ca - cb
       return a.name.localeCompare(b.name)
     })
+
+    // When "All Categories" is selected (default view), reorder so that
+    // page 1 shows exactly one representative product from each main category,
+    // followed by all remaining products on subsequent pages.
+    if (category === 'all' && sortBy === 'default') {
+      const seen = new Set()
+      const representatives = []
+      const rest = []
+      for (const product of list) {
+        const main = getMainCategory(product.category)
+        if (!seen.has(main)) {
+          seen.add(main)
+          representatives.push(product)
+        } else {
+          rest.push(product)
+        }
+      }
+      return [...representatives, ...rest]
+    }
+
     return list
   }, [items, query, category, minPrice, maxPrice, selectedSizes, selectedColors, selectedSeasons, categories, sortBy])
 
