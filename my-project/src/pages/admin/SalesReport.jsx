@@ -131,7 +131,7 @@ function SalesReport() {
                     <p className="text-center text-sm text-slate-400 py-6">No sales recorded in this period.</p>
                   ) : (
                     report.sellerTrends.map((seller, index) => {
-                      const maxSales = report.sellerTrends[0]?.current ?? 1
+                      const maxSales = Math.max(...report.sellerTrends.map((s) => s.current), 1)
                       const width = (seller.current / maxSales) * 100
                       return (
                         <div key={seller.seller} className="rounded-lg border border-slate-100 p-3">
