@@ -83,6 +83,7 @@ function Checkout() {
   const [voucherError, setVoucherError] = useState('')
   const [voucherSuccess, setVoucherSuccess] = useState('')
   const [verifyingVoucher, setVerifyingVoucher] = useState(false)
+  const [voucherPercentage, setVoucherPercentage] = useState(0)
 
   const handleApplyVoucher = async () => {
     if (!voucherCode.trim()) return
@@ -94,6 +95,7 @@ function Checkout() {
         await delay(500)
         const mockDiscount = Math.min(1000, Math.round(subtotal * 0.2))
         setVoucherDiscount(mockDiscount)
+        setVoucherPercentage(20)
         setVoucherAppliedCode(voucherCode.trim().toUpperCase())
         setVoucherSuccess(`Voucher applied successfully! Discount of PKR ${mockDiscount.toLocaleString()} (20% off).`)
       } else {
@@ -110,12 +112,14 @@ function Checkout() {
           cartTotal: subtotal,
         })
         setVoucherDiscount(res.data.discountAmount)
+        setVoucherPercentage(res.data.discountPercentage || 0)
         setVoucherAppliedCode(res.data.code)
         setVoucherSuccess(`Voucher applied successfully! Discount of PKR ${res.data.discountAmount.toLocaleString()} (${res.data.discountPercentage}% off).`)
       }
     } catch (err) {
       setVoucherError(err.response?.data?.message || 'Invalid, expired or ineligible voucher.')
       setVoucherDiscount(0)
+      setVoucherPercentage(0)
       setVoucherAppliedCode('')
     } finally {
       setVerifyingVoucher(false)
@@ -125,6 +129,7 @@ function Checkout() {
   const handleRemoveVoucher = () => {
     setVoucherCode('')
     setVoucherDiscount(0)
+    setVoucherPercentage(0)
     setVoucherAppliedCode('')
     setVoucherError('')
     setVoucherSuccess('')
@@ -469,7 +474,7 @@ function Checkout() {
           </div>
           {voucherDiscount > 0 && (
             <div className="flex justify-between text-sm text-green-600 font-semibold">
-              <span>Voucher 50% Off:</span>
+              <span>Voucher {voucherPercentage}% Off:</span>
               <span>-PKR {voucherDiscount.toFixed(0)}</span>
             </div>
           )}
@@ -504,7 +509,7 @@ function Checkout() {
               <div className="flex items-center justify-between rounded-lg bg-green-50 border border-green-200 px-3 py-2">
                 <div className="flex flex-col">
                   <span className="text-xs font-bold text-green-700 uppercase">{voucherAppliedCode} applied</span>
-                  <span className="text-[10px] text-green-600 font-medium">50% discount on items subtotal</span>
+                  <span className="text-[10px] text-green-600 font-medium">{voucherPercentage}% discount on items subtotal</span>
                 </div>
                 <button
                   type="button"
