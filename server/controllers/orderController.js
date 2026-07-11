@@ -595,34 +595,38 @@ const generateInvoice = asyncHandler(async (req, res) => {
   doc.moveDown(0.5);
 
   const startY = doc.y;
-  doc.moveTo(50, startY).lineTo(550, startY).strokeColor('#cbd5e1').strokeWidth(1).stroke();
+  doc.strokeColor('#cbd5e1');
+  doc.lineWidth(1);
+  doc.moveTo(50, startY).lineTo(550, startY).stroke();
   doc.moveDown(0.5);
 
   // Print items
   doc.fillColor('#334155').fontSize(10);
   (order.orderItems || []).forEach((item) => {
     const currentY = doc.y;
-    doc.text(item.name, 50, currentY, { width: 220 });
-    doc.text(String(item.qty), 280, currentY, { width: 40, align: 'right' });
-    doc.text(`PKR ${item.price.toLocaleString()}`, 340, currentY, { width: 100, align: 'right' });
-    doc.text(`PKR ${(item.price * item.qty).toLocaleString()}`, 460, currentY, { width: 90, align: 'right' });
+    doc.text(item.name || 'Unnamed Product', 50, currentY, { width: 220 });
+    doc.text(String(item.qty || 0), 280, currentY, { width: 40, align: 'right' });
+    doc.text(`PKR ${(item.price || 0).toLocaleString()}`, 340, currentY, { width: 100, align: 'right' });
+    doc.text(`PKR ${((item.price || 0) * (item.qty || 0)).toLocaleString()}`, 460, currentY, { width: 90, align: 'right' });
     doc.moveDown(0.8);
   });
 
   doc.moveDown(1);
   const endY = doc.y;
-  doc.moveTo(50, endY).lineTo(550, endY).strokeColor('#cbd5e1').strokeWidth(1).stroke();
+  doc.strokeColor('#cbd5e1');
+  doc.lineWidth(1);
+  doc.moveTo(50, endY).lineTo(550, endY).stroke();
   doc.moveDown(0.5);
 
   // Totals
   doc.fontSize(10).fillColor('#334155');
-  doc.text(`Items Subtotal: PKR ${order.itemsPrice.toLocaleString()}`, 350, doc.y, { align: 'right' });
-  doc.text(`Shipping Charges: PKR ${order.shippingPrice.toLocaleString()}`, 350, doc.y, { align: 'right' });
+  doc.text(`Items Subtotal: PKR ${(order.itemsPrice || 0).toLocaleString()}`, 350, doc.y, { align: 'right' });
+  doc.text(`Shipping Charges: PKR ${(order.shippingPrice || 0).toLocaleString()}`, 350, doc.y, { align: 'right' });
   if (order.voucherDiscount > 0) {
-    doc.text(`Voucher Discount: -PKR ${order.voucherDiscount.toLocaleString()} (${order.voucherCode})`, 350, doc.y, { align: 'right' });
+    doc.text(`Voucher Discount: -PKR ${(order.voucherDiscount || 0).toLocaleString()} (${order.voucherCode || ''})`, 350, doc.y, { align: 'right' });
   }
   doc.moveDown(0.5);
-  doc.fontSize(12).fillColor('#1d4ed8').text(`Grand Total: PKR ${order.totalPrice.toLocaleString()}`, 350, doc.y, { align: 'right', style: 'bold' });
+  doc.fontSize(12).fillColor('#1d4ed8').text(`Grand Total: PKR ${(order.totalPrice || 0).toLocaleString()}`, 350, doc.y, { align: 'right', style: 'bold' });
 
   // Footer note
   doc.moveDown(3);
