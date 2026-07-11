@@ -324,23 +324,30 @@ function Messages() {
           {role === 'admin' ? (
             <div className="mt-4 border-t border-slate-100 pt-4">
               <p className="text-xs font-semibold uppercase text-slate-500">Message a vendor</p>
-              <div className="mt-2 space-y-2">
-                {adminSellers.slice(0, 6).map((seller) => (
-                  <button
-                    key={seller.id}
-                    type="button"
-                    onClick={() => startAdminVendorChat(seller.id)}
-                    className="flex w-full items-center gap-2 rounded-md border border-slate-200 px-3 py-2 text-left text-sm hover:bg-slate-50"
-                  >
-                    <span
-                      className={`inline-block h-2 w-2 shrink-0 rounded-full ${
-                        isUserOnline(seller.id) ? 'bg-green-500' : 'bg-slate-300'
+              <div className="mt-2 space-y-2 max-h-[220px] overflow-y-auto pr-1">
+                {adminSellers.map((seller) => {
+                  const isActive = activeConversation && normalizeId(activeConversation.otherParticipant?.id) === normalizeId(seller.id);
+                  return (
+                    <button
+                      key={seller.id}
+                      type="button"
+                      onClick={() => startAdminVendorChat(seller.id)}
+                      className={`flex w-full items-center gap-2 rounded-md border px-3 py-2 text-left text-sm transition ${
+                        isActive
+                          ? 'border-blue-300 bg-blue-50 text-blue-700 font-semibold shadow-sm'
+                          : 'border-slate-200 hover:bg-slate-50 text-slate-700'
                       }`}
-                      title={isUserOnline(seller.id) ? 'Online' : 'Offline'}
-                    />
-                    {seller.name}
-                  </button>
-                ))}
+                    >
+                      <span
+                        className={`inline-block h-2 w-2 shrink-0 rounded-full ${
+                          isUserOnline(seller.id) ? 'bg-green-500' : 'bg-slate-300'
+                        }`}
+                        title={isUserOnline(seller.id) ? 'Online' : 'Offline'}
+                      />
+                      {seller.shop ? `${seller.shop} (${seller.name})` : seller.name}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           ) : null}

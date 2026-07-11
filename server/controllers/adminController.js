@@ -45,6 +45,7 @@ const listUsers = asyncHandler(async (req, res) => {
       email: u.email,
       role: u.role,
       status: u.role === 'seller' ? (u.isApproved ? 'approved' : 'pending') : 'active',
+      isAppealed: u.isAppealed || false,
       shop: shopByOwner.get(u._id.toString()) || '',
     }))
   );

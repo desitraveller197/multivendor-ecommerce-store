@@ -22,7 +22,7 @@ function ManageSellers() {
       ]
     }
 
-    const res = await axiosInstance.get('/admin/users')
+    const res = await axiosInstance.get('/admin/users?status=pending')
     return res.data
   }
 
@@ -122,7 +122,14 @@ function ManageSellers() {
                 className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 p-4 transition-all duration-200 hover:border-slate-300 hover:shadow-sm"
               >
                 <div>
-                  <p className="font-semibold text-slate-900">{seller.name}</p>
+                  <p className="font-semibold text-slate-900 flex items-center gap-2">
+                    {seller.name}
+                    {seller.isAppealed && (
+                      <span className="inline-block rounded bg-rose-100 px-1.5 py-0.5 text-[10px] font-bold text-rose-700 animate-pulse">
+                        APPEALED
+                      </span>
+                    )}
+                  </p>
                   <p className="text-sm text-slate-500">{seller.email}</p>
                   {seller.shop && <p className="text-xs text-slate-400">{seller.shop}</p>}
                 </div>

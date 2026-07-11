@@ -43,6 +43,7 @@ const userSchema = new mongoose.Schema(
     city: { type: String },
     avatar: { type: String, default: 'https://ui-avatars.com/api/?name=User' },
     isApproved: { type: Boolean, default: false }, // sellers; flipped by admin
+    isAppealed: { type: Boolean, default: false }, // sellers; requested appeal
     isActive: { type: Boolean, default: true },
     address: { type: addressSchema, default: {} },
     resetPasswordToken: { type: String, select: false },

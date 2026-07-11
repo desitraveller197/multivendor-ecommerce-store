@@ -156,10 +156,48 @@ const getWithdrawals = asyncHandler(async (req, res) => {
   res.json(withdrawals);
 });
 
+// POST /api/seller/appeal
+const appealApproval = asyncHandler(async (req, res) => {
+  const User = require('../models/User');
+  const Notification = require('../models/Notification');
+  const user = await User.findById(req.user._id);
+
+  if (!user || user.role !== 'seller') {
+    res.status(404);
+    throw new Error('Seller not found');
+  }
+
+  if (user.isApproved) {
+    res.status(400);
+    throw new Error('Your account is already approved');
+  }
+
+  const elapsedMs = Date.now() - new Date(user.createdAt).getTime();
+  const elapsedHours = elapsedMs / (1000 * 60 * 60);
+
+  if (elapsedHours < 24) {
+    res.status(400);
+    throw new Error('You can only appeal after 24 hours from registration');
+  }
+
+  user.isAppealed = true;
+  await user.save();
+
+  // Create system notification for admins
+  await Notification.create({
+    type: 'system',
+    title: 'Seller Approval Appeal',
+    message: `Seller "${user.name}" (${user.email}) has filed an appeal for account approval after 24 hours.`,
+  });
+
+  res.json({ message: 'Appeal submitted successfully', success: true });
+});
+
 module.exports = {
   getSellerStats,
   revenueChart,
   getBalance,
   createWithdrawal,
   getWithdrawals,
+  appealApproval,
 };

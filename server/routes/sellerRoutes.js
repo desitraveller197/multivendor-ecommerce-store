@@ -11,6 +11,7 @@ router.get('/stats/revenue-chart', protect, authorize('seller', 'admin'), ctrl.r
 router.get('/balance', protect, authorize('seller', 'admin'), ctrl.getBalance);
 router.get('/withdrawals', protect, authorize('seller', 'admin'), ctrl.getWithdrawals);
 router.post('/withdrawals', protect, authorize('seller', 'admin'), ctrl.createWithdrawal);
+router.post('/appeal', protect, authorize('seller', 'admin'), ctrl.appealApproval);
 
 // ─── Discount management (apply to a product, a category, or the whole shop) ───
 router.get('/discounts', protect, authorize('seller', 'admin'), discountCtrl.listDiscounts);

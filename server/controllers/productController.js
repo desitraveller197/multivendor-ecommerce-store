@@ -119,6 +119,11 @@ const getProduct = asyncHandler(async (req, res) => {
 
 // POST /api/products  (seller)
 const createProduct = asyncHandler(async (req, res) => {
+  if (!req.user.isApproved) {
+    res.status(403);
+    throw new Error('Your seller account has not been approved yet. You cannot upload products.');
+  }
+
   const shop = await getOrCreateShop(req.user);
   const body = req.body || {};
 

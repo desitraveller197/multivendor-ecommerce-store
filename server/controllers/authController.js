@@ -22,6 +22,8 @@ function publicUser(user) {
     avatar: user.avatar,
     address: user.address || {},
     isApproved: user.isApproved,
+    isAppealed: user.isAppealed || false,
+    createdAt: user.createdAt,
   };
 }
 
@@ -65,10 +67,7 @@ const login = asyncHandler(async (req, res) => {
     throw new Error(`This account is not registered as a ${role}`);
   }
 
-  if (user.role === 'seller' && !user.isApproved) {
-    res.status(403);
-    throw new Error('Your seller account is awaiting admin approval');
-  }
+
 
   if (!user.isActive) {
     res.status(403);

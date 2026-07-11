@@ -13,6 +13,35 @@ function SellerDashboard() {
   const [statsError, setStatsError] = useState('')
   const [chartError, setChartError] = useState('')
 
+  const [profile, setProfile] = useState(null)
+  const [profileLoading, setProfileLoading] = useState(true)
+  const [appealLoading, setAppealLoading] = useState(false)
+  const [appealSuccess, setAppealSuccess] = useState('')
+  const [appealError, setAppealError] = useState('')
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        if (USE_MOCK) {
+          await delay(300)
+          setProfile({
+            isApproved: false,
+            isAppealed: false,
+            createdAt: new Date(Date.now() - 30 * 60 * 60 * 1000).toISOString(),
+          })
+        } else {
+          const res = await axiosInstance.get('/auth/profile')
+          setProfile(res.data)
+        }
+      } catch (err) {
+        console.error("Failed to fetch profile:", err)
+      } finally {
+        setProfileLoading(false)
+      }
+    }
+    fetchProfile()
+  }, [])
+
   useEffect(() => {
     const fetchStats = async () => {
       try {
@@ -67,6 +96,75 @@ function SellerDashboard() {
       <div className="grid gap-4 md:grid-cols-[240px_1fr]">
         <Sidebar role="seller" />
         <div className="rounded-lg bg-white p-6 shadow-sm">
+        {!profileLoading && profile && !profile.isApproved && (
+          <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-5 text-slate-800 shadow-sm">
+            <h3 className="text-base font-bold text-amber-800 flex items-center gap-2">
+              ⚠️ Seller Account Pending Approval
+            </h3>
+            {(() => {
+              const timeSinceCreated = Date.now() - new Date(profile.createdAt).getTime()
+              const twentyFourHours = 24 * 60 * 60 * 1000
+              const isOver24h = timeSinceCreated >= twentyFourHours
+
+              if (!isOver24h) {
+                const remainingMs = twentyFourHours - timeSinceCreated
+                const remainingHours = Math.max(0, Math.ceil(remainingMs / (1000 * 60 * 60)))
+                return (
+                  <p className="mt-2 text-sm text-slate-700">
+                    Your seller registration is under review. Our administrators verify all registrations within 24 hours. 
+                    Please wait up to <span className="font-semibold text-slate-900">{remainingHours} more hours</span>.
+                  </p>
+                )
+              }
+
+              if (profile.isAppealed) {
+                return (
+                  <p className="mt-2 text-sm text-emerald-800 font-medium">
+                    ✓ Priority Appeal submitted. Our administrator has been notified to review your application urgently.
+                  </p>
+                )
+              }
+
+              return (
+                <div className="mt-2 space-y-3">
+                  <p className="text-sm text-slate-700">
+                    Your seller account review is taking longer than 24 hours. You can file a priority appeal to request immediate review.
+                  </p>
+                  {appealError && <p className="text-xs text-red-600 font-medium">{appealError}</p>}
+                  {appealSuccess && <p className="text-xs text-green-700 font-medium">{appealSuccess}</p>}
+                  <button
+                    type="button"
+                    disabled={appealLoading}
+                    onClick={async () => {
+                      setAppealLoading(true)
+                      setAppealError('')
+                      setAppealSuccess('')
+                      try {
+                        if (USE_MOCK) {
+                          await delay(500)
+                          setProfile((prev) => ({ ...prev, isAppealed: true }))
+                          setAppealSuccess('Appeal submitted successfully!')
+                        } else {
+                          await axiosInstance.post('/seller/appeal')
+                          setProfile((prev) => ({ ...prev, isAppealed: true }))
+                          setAppealSuccess('Appeal submitted successfully!')
+                        }
+                      } catch (err) {
+                        setAppealError(err.response?.data?.message || 'Failed to submit appeal.')
+                      } finally {
+                        setAppealLoading(false)
+                      }
+                    }}
+                    className="rounded bg-blue-600 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 transition disabled:opacity-50"
+                  >
+                    {appealLoading ? 'Submitting Appeal...' : 'Appeal for Approval'}
+                  </button>
+                </div>
+              )
+            })()}
+          </div>
+        )}
+
         {statsError && (
           <p className="mt-2 text-sm text-amber-600">{statsError}</p>
         )}

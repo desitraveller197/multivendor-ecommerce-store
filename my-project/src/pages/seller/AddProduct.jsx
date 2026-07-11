@@ -17,6 +17,9 @@ function AddProduct() {
   const dispatch = useDispatch()
   const navigate = useNavigate()
 
+  const { user } = useSelector((state) => state.auth)
+  const isApproved = user ? user.isApproved : true
+
   const categories = useSelector((state) => state.products.categories)
   const categoryOptions = categories.length > 0 ? categories : [
     'Clothing', 'Traditional Clothing', 'Shawls & Dupattas', 'Handicrafts & Decor', 'Footwear (Chappals)', 'Beauty'
@@ -45,6 +48,11 @@ function AddProduct() {
   const handleSubmit = async (event) => {
     event.preventDefault()
     setError(null)
+
+    if (!isApproved) {
+      setError('Your seller account has not been approved yet. You cannot upload products.')
+      return
+    }
 
     if (selectedFiles.length === 0) {
       setError('Please upload at least one image')
@@ -105,6 +113,11 @@ function AddProduct() {
       <div className="grid gap-4 md:grid-cols-[240px_1fr]">
         <Sidebar role="seller" />
         <form onSubmit={handleSubmit} className="rounded-lg bg-white p-6 shadow-sm">
+          {!isApproved && (
+            <div className="col-span-full mb-4 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 font-semibold">
+              ⚠️ Your seller account is pending admin approval. You cannot upload products at this time.
+            </div>
+          )}
           <div className="mt-1 grid gap-3 md:grid-cols-2">
             <div className="flex flex-col gap-1">
               <label className="text-sm font-medium text-slate-700">Product Name</label>
@@ -247,7 +260,7 @@ function AddProduct() {
           {error && <p className="mt-3 text-sm text-red-500 font-semibold">{error}</p>}
           <button
             type="submit"
-            disabled={submitting}
+            disabled={submitting || !isApproved}
             className="mt-4 rounded bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-50"
           >
             {submitLabel}
