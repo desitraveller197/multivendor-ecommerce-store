@@ -302,7 +302,7 @@ function OrderDetail() {
           {refundError && <p className="text-xs text-red-500">{refundError}</p>}
           
           <div className="flex flex-wrap gap-3 pt-2">
-            {[...new Set((order.items || []).map((item) => String(item.sellerId || '')).filter(Boolean))].map(
+            {[...new Set((order.items || []).map((item) => String(item.sellerId || '')).filter(Boolean))].slice(0, 1).map(
               (sellerId) => (
                 <StartChatButton
                   key={sellerId}
