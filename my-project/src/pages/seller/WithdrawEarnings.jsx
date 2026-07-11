@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useSelector } from 'react-redux'
 import Sidebar from '../../components/Sidebar'
 import PageFrame from '../../components/PageFrame'
 import axiosInstance from '../../api/axiosConfig'
@@ -14,6 +15,8 @@ function WithdrawEarnings() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+
+  const notifications = useSelector((state) => state.notifications.items)
 
   async function loadData() {
     setLoading(true)
@@ -44,6 +47,15 @@ function WithdrawEarnings() {
   useEffect(() => {
     loadData()
   }, [])
+
+  useEffect(() => {
+    if (notifications.length > 0) {
+      const latest = notifications[0]
+      if (latest && (latest.link === '/seller/withdraw' || String(latest.title || '').toLowerCase().includes('withdrawal'))) {
+        loadData()
+      }
+    }
+  }, [notifications])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
