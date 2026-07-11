@@ -72,13 +72,13 @@ function WithdrawalRequests() {
       actions = (
         <div className="flex gap-2">
           <button
-            onClick={() => handleAction(w._id, 'approved')}
+            onClick={() => handleAction(w.id, 'approved')}
             className="rounded bg-blue-600 px-2.5 py-1 text-xs font-semibold text-white shadow-sm hover:bg-blue-700 transition"
           >
             Approve
           </button>
           <button
-            onClick={() => handleAction(w._id, 'rejected')}
+            onClick={() => handleAction(w.id, 'rejected')}
             className="rounded bg-rose-600 px-2.5 py-1 text-xs font-semibold text-white shadow-sm hover:bg-rose-700 transition"
           >
             Reject
@@ -88,7 +88,7 @@ function WithdrawalRequests() {
     } else if (w.status === 'approved') {
       actions = (
         <button
-          onClick={() => handleAction(w._id, 'paid')}
+          onClick={() => handleAction(w.id, 'paid')}
           className="rounded bg-emerald-600 px-2.5 py-1 text-xs font-semibold text-white shadow-sm hover:bg-emerald-700 transition"
         >
           Mark Paid
@@ -99,7 +99,7 @@ function WithdrawalRequests() {
     }
 
     return {
-      id: w._id,
+      id: w.id,
       seller: w.seller?.name || 'Seller',
       amount: `PKR ${w.amount.toLocaleString()}`,
       method: w.method,
