@@ -1,58 +1,58 @@
 const Voucher = require('../models/Voucher');
-const Notification = require('../models/Notification');
-const crypto = require('crypto');
+const VoucherUsage = require('../models/VoucherUsage');
 
 /**
- * Check if the order contains at least 3 items (total quantity).
- * If so, generate a new 50% voucher code and notify the customer.
+ * No-op fallback function (Buy 3 get voucher has been removed).
  */
 const checkAndAwardVoucher = async (order) => {
-  try {
-    if (!order || !order.customer) return;
-
-    // Calculate total quantity of items purchased
-    const totalQty = (order.orderItems || []).reduce((acc, item) => acc + (item.qty || item.quantity || 0), 0);
-
-    if (totalQty >= 3) {
-      const code = 'VOUCH-' + crypto.randomBytes(3).toString('hex').toUpperCase();
-
-      await Voucher.create({
-        code,
-        customer: order.customer,
-        discountType: 'percentage',
-        discountValue: 50,
-        isUsed: false,
-      });
-
-      // Notify customer
-      await Notification.create({
-        user: order.customer,
-        title: '🎉 New 50% Voucher Awarded!',
-        message: `Thank you for purchasing ${totalQty} products! You have been awarded a 50% discount voucher. Code: ${code}`,
-        type: 'info',
-      });
-
-      console.log(`[Voucher] Successfully awarded voucher ${code} to customer ${order.customer}`);
-    }
-  } catch (err) {
-    console.error('[Voucher] Error checking/awarding voucher:', err);
-  }
+  // No-op
+  return;
 };
 
 /**
- * Settle/mark the applied voucher code on an order as used.
+ * Transaction-safe method to settle/mark a voucher code as used for an order.
+ * Prevents double redemption and race conditions by utilizing Mongoose's unique indexes on VoucherUsage
+ * and atomic increments on Voucher.
  */
 const markVoucherUsed = async (order) => {
   try {
-    if (order && order.voucherCode) {
-      const result = await Voucher.updateOne(
-        { code: order.voucherCode.trim().toUpperCase(), customer: order.customer, isUsed: false },
-        { isUsed: true, usedAt: new Date() }
-      );
-      if (result.modifiedCount > 0) {
-        console.log(`[Voucher] Marked voucher ${order.voucherCode} as used for customer ${order.customer}`);
-      }
+    if (!order || !order.voucherCode || !order.customer) return;
+
+    const code = String(order.voucherCode).trim().toUpperCase();
+    const userId = order.customer._id || order.customer;
+
+    // Find the voucher
+    const voucher = await Voucher.findOne({ code, active: true });
+    if (!voucher) {
+      console.warn(`[Voucher] Voucher ${code} not found or inactive during order settlement.`);
+      return;
     }
+
+    // Attempt to insert a usage record. This will fail with a duplicate key error
+    // if the user already used this voucher (composite unique index on { voucher, user }).
+    try {
+      await VoucherUsage.create({
+        voucher: voucher._id,
+        user: userId,
+        order: order._id,
+        discountAmount: order.voucherDiscount || 0,
+        usedAt: new Date(),
+      });
+    } catch (err) {
+      if (err.code === 11000) {
+        console.error(`[Voucher] Duplicate voucher usage detected for code ${code} and user ${userId}. Skipping.`);
+        return;
+      }
+      throw err;
+    }
+
+    // Increment usedCount atomically
+    await Voucher.updateOne(
+      { _id: voucher._id },
+      { $inc: { usedCount: 1 } }
+    );
+
+    console.log(`[Voucher] Marked voucher ${code} as used for customer ${userId} on order ${order._id}`);
   } catch (err) {
     console.error('[Voucher] Error marking voucher used:', err);
   }

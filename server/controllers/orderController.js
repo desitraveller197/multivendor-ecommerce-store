@@ -107,21 +107,35 @@ const createOrder = asyncHandler(async (req, res) => {
     shippingPrice += devCharges;
   }
 
-  const Voucher = require('../models/Voucher');
   const voucherCode = req.body.voucherCode ? String(req.body.voucherCode).trim().toUpperCase() : '';
   let voucherDiscount = 0;
 
   if (voucherCode) {
-    const voucher = await Voucher.findOne({
-      code: voucherCode,
-      customer: req.user._id,
-      isUsed: false,
-    });
-    if (!voucher) {
-      res.status(400);
-      throw new Error('Invalid or already used voucher code.');
+    const voucherService = require('../services/voucherService');
+    const Product = require('../models/Product');
+    const cartItems = [];
+    for (const item of orderItems) {
+      const prod = await Product.findById(item.product).select('category');
+      cartItems.push({
+        id: item.product,
+        name: item.name,
+        price: item.price,
+        quantity: item.qty,
+        category: prod ? prod.category : '',
+      });
     }
-    voucherDiscount = Math.round(itemsPrice * 0.5);
+    try {
+      const validation = await voucherService.validateVoucher(
+        voucherCode,
+        req.user._id,
+        cartItems,
+        itemsPrice
+      );
+      voucherDiscount = validation.discountAmount;
+    } catch (err) {
+      res.status(400);
+      throw new Error(err.message);
+    }
   }
 
   const totalPrice = Math.max(0, itemsPrice - voucherDiscount + shippingPrice);
@@ -533,11 +547,15 @@ const generateInvoice = asyncHandler(async (req, res) => {
   }
 
   const doc = new PDFDocument({ margin: 50 });
-
-  res.setHeader('Content-Type', 'application/pdf');
-  res.setHeader('Content-Disposition', `attachment; filename=Invoice-${order.orderNumber || order._id}.pdf`);
-
-  doc.pipe(res);
+  const chunks = [];
+  doc.on('data', (chunk) => chunks.push(chunk));
+  doc.on('end', () => {
+    const buffer = Buffer.concat(chunks);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Length', buffer.length);
+    res.setHeader('Content-Disposition', `attachment; filename=Invoice-${order.orderNumber || order._id}.pdf`);
+    res.send(buffer);
+  });
 
   // Logo & Header
   doc.fillColor('#1d4ed8').fontSize(24).text('BAZARIX STORE', { align: 'right' });

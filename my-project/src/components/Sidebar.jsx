@@ -13,6 +13,7 @@ const linksByRole = {
     { to: '/admin/sales-report', label: 'Sales Report' },
     { to: '/admin/platform-settings', label: 'Platform Settings' },
     { to: '/admin/posters', label: 'Manage Posters' },
+    { to: '/admin/vouchers', label: 'Manage Vouchers' },
     { to: '/messages', label: 'Messages' },
   ],
   seller: [
@@ -30,6 +31,7 @@ const linksByRole = {
     { to: '/wishlist', label: 'Wishlist' },
     { to: '/customer/cart', label: 'Cart' },
     { to: '/my-orders', label: 'My Orders' },
+    { to: '/my-vouchers', label: 'Vouchers' },
     { to: '/customer/notifications', label: 'Notifications' },
     { to: '/messages', label: 'Messages' },
   ],

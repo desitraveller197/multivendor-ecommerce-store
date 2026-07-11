@@ -92,17 +92,29 @@ function Checkout() {
     try {
       if (USE_MOCK) {
         await delay(500)
-        setVoucherDiscount(Math.round(subtotal * 0.5))
+        const mockDiscount = Math.min(1000, Math.round(subtotal * 0.2))
+        setVoucherDiscount(mockDiscount)
         setVoucherAppliedCode(voucherCode.trim().toUpperCase())
-        setVoucherSuccess('Voucher applied successfully! 50% discount on products.')
+        setVoucherSuccess(`Voucher applied successfully! Discount of PKR ${mockDiscount.toLocaleString()} (20% off).`)
       } else {
-        const res = await axiosInstance.post('/vouchers/verify', { code: voucherCode.trim() })
-        setVoucherDiscount(Math.round(subtotal * 0.5))
+        const formattedItems = cartItems.map((item) => ({
+          id: item.id || item._id || item.product,
+          name: item.name,
+          price: item.discountPrice ?? item.price,
+          quantity: item.quantity,
+          category: item.category || '',
+        }))
+        const res = await axiosInstance.post('/vouchers/validate', {
+          code: voucherCode.trim(),
+          cartItems: formattedItems,
+          cartTotal: subtotal,
+        })
+        setVoucherDiscount(res.data.discountAmount)
         setVoucherAppliedCode(res.data.code)
-        setVoucherSuccess('Voucher applied successfully! 50% discount on products.')
+        setVoucherSuccess(`Voucher applied successfully! Discount of PKR ${res.data.discountAmount.toLocaleString()} (${res.data.discountPercentage}% off).`)
       }
     } catch (err) {
-      setVoucherError(err.response?.data?.message || 'Invalid or already used voucher code.')
+      setVoucherError(err.response?.data?.message || 'Invalid, expired or ineligible voucher.')
       setVoucherDiscount(0)
       setVoucherAppliedCode('')
     } finally {

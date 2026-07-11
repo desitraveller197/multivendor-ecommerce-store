@@ -19,6 +19,7 @@ import SalesReport from './pages/admin/SalesReport'
 import Transactions from './pages/admin/Transactions'
 import WithdrawalRequests from './pages/admin/WithdrawalRequests'
 import ManagePosters from './pages/admin/ManagePosters'
+import ManageVouchers from './pages/admin/ManageVouchers'
 import ForgotPassword from './pages/auth/ForgotPassword'
 import Login from './pages/auth/Login'
 import Register from './pages/auth/Register'
@@ -205,6 +206,14 @@ function App() {
               element={
                 <ProtectedRoute roles={['admin']}>
                   <ManagePosters />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/vouchers"
+              element={
+                <ProtectedRoute roles={['admin']}>
+                  <ManageVouchers />
                 </ProtectedRoute>
               }
             />
