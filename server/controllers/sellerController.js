@@ -75,4 +75,91 @@ const revenueChart = asyncHandler(async (req, res) => {
   res.json(buckets.map(({ month, revenue }) => ({ month, revenue })));
 });
 
-module.exports = { getSellerStats, revenueChart };
+// Helper to compute balance
+async function computeSellerBalance(sellerId) {
+  const PlatformSettings = require('../models/PlatformSettings');
+  const Withdrawal = require('../models/Withdrawal');
+  let settings = await PlatformSettings.findOne();
+  const commissionPercent = settings ? settings.commissionPercent : 10;
+
+  // Paid & Delivered orders
+  const orders = await Order.find({
+    isPaid: true,
+    orderStatus: 'Delivered',
+    'orderItems.seller': sellerId,
+  });
+
+  let totalEarned = 0;
+  for (const order of orders) {
+    for (const item of order.orderItems) {
+      if (item.seller.toString() === sellerId.toString()) {
+        const itemTotal = item.price * item.qty;
+        const commission = itemTotal * (commissionPercent / 100);
+        totalEarned += (itemTotal - commission);
+      }
+    }
+  }
+
+  // Deduct prior withdrawals (all except rejected)
+  const withdrawals = await Withdrawal.find({
+    seller: sellerId,
+    status: { $ne: 'rejected' },
+  });
+
+  const totalWithdrawn = withdrawals.reduce((sum, w) => sum + w.amount, 0);
+
+  return Math.max(0, Math.round(totalEarned - totalWithdrawn));
+}
+
+// GET /api/seller/balance
+const getBalance = asyncHandler(async (req, res) => {
+  const balance = await computeSellerBalance(req.user._id);
+  res.json({ balance });
+});
+
+// POST /api/seller/withdrawals
+const createWithdrawal = asyncHandler(async (req, res) => {
+  const { amount, method, accountDetails } = req.body;
+  const Withdrawal = require('../models/Withdrawal');
+
+  if (!amount || amount <= 0) {
+    res.status(400);
+    throw new Error('Please provide a valid withdrawal amount');
+  }
+
+  if (!method || !accountDetails?.trim()) {
+    res.status(400);
+    throw new Error('Please specify payout method and account details');
+  }
+
+  const balance = await computeSellerBalance(req.user._id);
+  if (amount > balance) {
+    res.status(400);
+    throw new Error(`Insufficient balance. Your available balance is PKR ${balance.toLocaleString()}`);
+  }
+
+  const withdrawal = await Withdrawal.create({
+    seller: req.user._id,
+    amount,
+    method,
+    accountDetails: accountDetails.trim(),
+    status: 'pending',
+  });
+
+  res.status(201).json(withdrawal);
+});
+
+// GET /api/seller/withdrawals
+const getWithdrawals = asyncHandler(async (req, res) => {
+  const Withdrawal = require('../models/Withdrawal');
+  const withdrawals = await Withdrawal.find({ seller: req.user._id }).sort({ requestedAt: -1 });
+  res.json(withdrawals);
+});
+
+module.exports = {
+  getSellerStats,
+  revenueChart,
+  getBalance,
+  createWithdrawal,
+  getWithdrawals,
+};

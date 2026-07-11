@@ -12,6 +12,7 @@ function ProductDetail() {
   const { id } = useParams()
   const dispatch = useDispatch()
   const navigate = useNavigate()
+  const { isAuthenticated } = useSelector((state) => state.auth)
   const products = useSelector((state) => state.products.items)
   const [activeImage, setActiveImage] = useState(0)
   const product = products.find((item) => String(item.id) === id)
@@ -19,6 +20,45 @@ function ProductDetail() {
   const [quantity, setQuantity] = useState(1)
   const [productReviews, setProductReviews] = useState([])
   const [reviewsLoading, setReviewsLoading] = useState(true)
+
+  const [rating, setRating] = useState(5)
+  const [comment, setComment] = useState('')
+  const [reviewError, setReviewError] = useState('')
+  const [reviewSuccess, setReviewSuccess] = useState('')
+  const [reviewSubmitting, setReviewSubmitting] = useState(false)
+
+  const handleReviewSubmit = async (e) => {
+    e.preventDefault()
+    setReviewSubmitting(true)
+    setReviewError('')
+    setReviewSuccess('')
+    try {
+      if (USE_MOCK) {
+        await delay(500)
+        setReviewSuccess('Review submitted successfully!')
+        setProductReviews((prev) => [
+          {
+            id: Date.now().toString(),
+            customerName: 'You',
+            rating,
+            comment,
+            createdAt: new Date().toISOString(),
+          },
+          ...prev,
+        ])
+      } else {
+        const res = await axiosInstance.post(`/reviews/product/${id}`, { rating, comment })
+        setReviewSuccess('Review submitted successfully!')
+        setProductReviews((prev) => [res.data, ...prev])
+      }
+      setComment('')
+      setRating(5)
+    } catch (err) {
+      setReviewError(err.response?.data?.message || 'Failed to submit review.')
+    } finally {
+      setReviewSubmitting(false)
+    }
+  }
 
   useEffect(() => {
     if (!id) return
@@ -70,7 +110,10 @@ function ProductDetail() {
 
   const images = useMemo(() => {
     if (!product) return []
-    return [product.image, product.image, product.image]
+    if (Array.isArray(product.images) && product.images.length > 0) {
+      return product.images
+    }
+    return [product.image].filter(Boolean)
   }, [product])
 
   if (!product) {
@@ -178,8 +221,48 @@ function ProductDetail() {
 
         <div className="mt-6">
           <h2 className="text-lg font-semibold text-slate-900">Reviews</h2>
+          {isAuthenticated && (
+            <form onSubmit={handleReviewSubmit} className="mt-3 rounded-lg border border-slate-200 bg-slate-50/50 p-4 space-y-3">
+              <h3 className="text-sm font-semibold text-slate-800">Write a Review</h3>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-semibold text-slate-600">Rating:</span>
+                <div className="flex gap-1">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      type="button"
+                      onClick={() => setRating(star)}
+                      className={`text-xl transition ${star <= rating ? 'text-amber-400' : 'text-slate-300'}`}
+                    >
+                      ★
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="flex flex-col gap-1">
+                <textarea
+                  required
+                  rows={2}
+                  disabled={reviewSubmitting}
+                  placeholder="Describe your purchase and shopping experience..."
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                  className="w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 bg-white"
+                />
+              </div>
+              {reviewSuccess && <p className="text-xs text-green-600 font-semibold">{reviewSuccess}</p>}
+              {reviewError && <p className="text-xs text-red-500 font-semibold">{reviewError}</p>}
+              <button
+                type="submit"
+                disabled={reviewSubmitting || !comment.trim()}
+                className="rounded bg-blue-600 px-4 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 disabled:opacity-50 transition"
+              >
+                {reviewSubmitting ? 'Submitting...' : 'Submit Review'}
+              </button>
+            </form>
+          )}
           {reviewsLoading ? (
-            <p className="mt-2 text-sm text-slate-500">Loading reviews…</p>
+            <p className="mt-3 text-sm text-slate-500">Loading reviews…</p>
           ) : productReviews.length > 0 ? (
             <div className="mt-3 space-y-3">
               {productReviews.map((review) => (

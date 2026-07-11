@@ -47,25 +47,26 @@ Then `cd ../my-project && npm install && npm run dev`.
 
 ## REST API (base `/api`)
 
-- `auth`   — register, login, profile, change-password, forgot/reset password
-- `admin`  — stats, users, sellers approve/reject, orders
-- `products` — list/search, get, create, update, delete
+- `auth`   — register, login, profile, change-password, forgot-password, reset-password (OTP based)
+- `admin`  — stats, users, sellers approve/reject, orders, transactions log, refund requests, withdrawal requests, settings, sales report
+- `products` — list/search, get, create, update, delete (supports up to 5 images)
 - `shops`  — list, my shop, get, shop products
-- `orders` — create (+ Stripe PaymentIntent), my orders, seller orders, status
-- `categories` — list, create, delete
-- `upload/image` — multipart image upload
-- `seller/stats/revenue-chart` — recharts data
-- `payment/webhook` — Stripe webhook (raw body)
+- `orders` — create, my orders, seller orders, status, cancel order, refund request, invoice PDF download
+- `categories` — list, create, update, delete
+- `wishlist` — get, sync/update (persistent database sync)
+- `notifications` — list notifications, mark read, mark all read
+- `upload` — `/upload/image` (single upload), `/upload/images` (bulk upload up to 5 files)
+- `seller` — stats, revenue-chart, available balance, withdrawals request
+- `payment` — JazzCash/Easypaisa/Stripe success/failure callback handlers, webhook
 
-## Stripe webhook (local)
+## Environment Variables
 
-```bash
-stripe listen --forward-to localhost:5000/api/payment/webhook
-# copy whsec_… into server/.env as STRIPE_WEBHOOK_SECRET
-```
+- `REDIS_URL` — Configures the Socket.io Redis adapter for live scale-out notifications.
+- `JWT_SECRET` — Key for auth session token signature verification.
+- `STRIPE_SECRET_KEY` — API key for processing checkout intents.
 
 ## Notes
 
 - Every model exposes `id` (mapped from `_id`) so frontend `.id` usage works unchanged.
-- Orders are returned in the frontend's flattened shape: `{ id, status, amount, date, paymentMethod, address, items }`.
+- Orders are returned in the frontend's flattened shape: `{ id, status, amount, date, paymentMethod, address, items, orderNumber }`.
 - Uploaded files are served from `/uploads/*`; for production use Cloudinary/S3 (Render disks are ephemeral).

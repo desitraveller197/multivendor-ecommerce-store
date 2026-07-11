@@ -4,6 +4,8 @@ const Conversation = require('../models/Conversation');
 const Message = require('../models/Message');
 const { assertCanAccessConversation } = require('../controllers/chatController');
 
+let io = null;
+
 // Tracks which users currently have at least one live socket connection.
 // Map<userId, { role, sockets: Set<socketId> }>
 const onlineUsers = new Map();
@@ -15,7 +17,7 @@ function snapshotOnline() {
   }));
 }
 
-function markOnline(io, socket) {
+function markOnline(ioInstance, socket) {
   const userId = String(socket.user._id);
   const existing = onlineUsers.get(userId);
   if (existing) {
@@ -24,10 +26,10 @@ function markOnline(io, socket) {
   }
   onlineUsers.set(userId, { role: socket.user.role, sockets: new Set([socket.id]) });
   // First connection for this user → announce they came online.
-  io.emit('presence_change', { userId, role: socket.user.role, online: true });
+  ioInstance.emit('presence_change', { userId, role: socket.user.role, online: true });
 }
 
-function markOffline(io, socket) {
+function markOffline(ioInstance, socket) {
   const userId = String(socket.user._id);
   const info = onlineUsers.get(userId);
   if (!info) return;
@@ -35,19 +37,36 @@ function markOffline(io, socket) {
   if (info.sockets.size === 0) {
     onlineUsers.delete(userId);
     // Last connection closed → announce they went offline.
-    io.emit('presence_change', { userId, role: info.role, online: false });
+    ioInstance.emit('presence_change', { userId, role: info.role, online: false });
   }
 }
 
 function initSocket(server) {
   const { Server } = require('socket.io');
 
-  const io = new Server(server, {
+  io = new Server(server, {
     cors: {
       origin: true,
       methods: ['GET', 'POST'],
     },
   });
+
+  if (process.env.REDIS_URL) {
+    try {
+      const { createClient } = require('redis');
+      const { createAdapter } = require('@socket.io/redis-adapter');
+      const pubClient = createClient({ url: process.env.REDIS_URL });
+      const subClient = pubClient.duplicate();
+      Promise.all([pubClient.connect(), subClient.connect()]).then(() => {
+        io.adapter(createAdapter(pubClient, subClient));
+        console.log('✔ Socket.io Redis adapter configured');
+      }).catch((err) => {
+        console.error('Socket.io Redis adapter connection failed:', err.message);
+      });
+    } catch (err) {
+      console.error('Socket.io Redis adapter initialization failed:', err.message);
+    }
+  }
 
   io.use(async (socket, next) => {
     try {
@@ -171,4 +190,10 @@ function initSocket(server) {
   return io;
 }
 
-module.exports = { initSocket };
+function sendNotification(userId, data) {
+  if (io) {
+    io.to(`user:${userId}`).emit('new_notification', data);
+  }
+}
+
+module.exports = { initSocket, sendNotification };

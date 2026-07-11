@@ -74,6 +74,7 @@ function Navbar() {
           { to: '/my-orders', label: 'Orders' },
           { to: '/my-profile', label: 'Profile' },
           { to: '/messages', label: 'Messages' },
+          { to: '/my-vouchers', label: 'My Vouchers' },
           { to: '/customer/notifications', label: 'Alerts' },
         ]
       : role === 'seller'
@@ -105,17 +106,6 @@ function Navbar() {
       <NavLink to="/shops" className={({ isActive }) => `${navLinkBase} ${isActive ? navLinkActive : ''}`}>
         Shops
       </NavLink>
-      <NavLink
-        to="/cart"
-        className={({ isActive }) => `${navLinkBase} relative ${isActive ? navLinkActive : ''}`}
-      >
-        Cart
-        {cartCount > 0 && (
-          <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white">
-            {cartCount}
-          </span>
-        )}
-      </NavLink>
     </>
   )
 
@@ -131,6 +121,20 @@ function Navbar() {
 
         <nav className="hidden min-w-0 flex-1 items-center justify-end gap-1 text-xs xl:flex xl:gap-1.5 xl:text-sm">
           {publicLinks}
+
+          {isAuthenticated && role === 'customer' && (
+            <NavLink
+              to="/cart"
+              className={({ isActive }) => `${navLinkBase} relative ${isActive ? navLinkActive : ''}`}
+            >
+              Cart
+              {cartCount > 0 && (
+                <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white">
+                  {cartCount}
+                </span>
+              )}
+            </NavLink>
+          )}
 
           {isAuthenticated ? (
             <>
@@ -253,18 +257,20 @@ function Navbar() {
             >
               Shops
             </NavLink>
-            <NavLink
-              to="/cart"
-              className={({ isActive }) => `${mobileNavLinkBase} relative ${isActive ? navLinkActive : ''}`}
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Cart
-              {cartCount > 0 && (
-                <span className="absolute right-4 top-3 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white">
-                  {cartCount}
-                </span>
-              )}
-            </NavLink>
+            {isAuthenticated && role === 'customer' && (
+              <NavLink
+                to="/cart"
+                className={({ isActive }) => `${mobileNavLinkBase} relative ${isActive ? navLinkActive : ''}`}
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Cart
+                {cartCount > 0 && (
+                  <span className="absolute right-4 top-3 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white">
+                    {cartCount}
+                  </span>
+                )}
+              </NavLink>
+            )}
 
             {isAuthenticated
               ? accountLinks.map((link) => (

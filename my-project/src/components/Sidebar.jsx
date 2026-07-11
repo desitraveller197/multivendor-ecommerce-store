@@ -12,11 +12,13 @@ const linksByRole = {
     { to: '/admin/refunds', label: 'Refund Requests' },
     { to: '/admin/sales-report', label: 'Sales Report' },
     { to: '/admin/platform-settings', label: 'Platform Settings' },
+    { to: '/admin/posters', label: 'Manage Posters' },
     { to: '/messages', label: 'Messages' },
   ],
   seller: [
     { to: '/seller/dashboard', label: 'Dashboard' },
     { to: '/seller/shop', label: 'My Shop' },
+    { to: '/seller/charges', label: 'Other Charges' },
     { to: '/seller/products', label: 'Products' },
     { to: '/seller/discounts', label: 'Manage Discounts' },
     { to: '/seller/orders', label: 'Orders' },

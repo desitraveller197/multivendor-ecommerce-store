@@ -20,6 +20,8 @@ function MyShop() {
             name: 'My Demo Shop',
             description: 'A trusted seller of traditional Pakistani crafts.',
             logo: 'https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=400',
+            deliveryCharges: 250,
+            taxRate: 5,
           })
         } else {
           const res = await axiosInstance.get('/shops/my')
@@ -103,6 +105,7 @@ function MyShop() {
                   placeholder="https://…"
                 />
               </div>
+
               {shop?.logo && (
                 <img
                   src={shop.logo}

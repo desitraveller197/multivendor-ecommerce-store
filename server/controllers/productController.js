@@ -94,13 +94,16 @@ function withId(doc) {
   if (doc && doc.image) {
     doc.image = resolveImageUrl(doc.image);
   }
+  if (doc && Array.isArray(doc.images)) {
+    doc.images = doc.images.map(resolveImageUrl);
+  }
   return doc;
 }
 
 // GET /api/products/:id  (public)
 const getProduct = asyncHandler(async (req, res) => {
   const product = await Product.findById(req.params.id)
-    .populate('shop', 'name logo rating')
+    .populate('shop', 'name logo rating deliveryCharges taxRate')
     .populate('seller', 'name email');
   if (!product) {
     res.status(404);
@@ -108,6 +111,9 @@ const getProduct = asyncHandler(async (req, res) => {
   }
   const doc = product.toJSON();
   doc.image = resolveImageUrl(doc.image);
+  if (Array.isArray(doc.images)) {
+    doc.images = doc.images.map(resolveImageUrl);
+  }
   res.json(doc);
 });
 
@@ -115,6 +121,11 @@ const getProduct = asyncHandler(async (req, res) => {
 const createProduct = asyncHandler(async (req, res) => {
   const shop = await getOrCreateShop(req.user);
   const body = req.body || {};
+
+  if (Array.isArray(body.images) && body.images.length > 5) {
+    res.status(400);
+    throw new Error('Maximum 5 product images allowed');
+  }
 
   const product = await Product.create({
     name: body.name,
@@ -138,6 +149,9 @@ const createProduct = asyncHandler(async (req, res) => {
 
   const doc = product.toJSON();
   doc.image = resolveImageUrl(doc.image);
+  if (Array.isArray(doc.images)) {
+    doc.images = doc.images.map(resolveImageUrl);
+  }
   res.status(201).json(doc);
 });
 
@@ -151,6 +165,11 @@ const updateProduct = asyncHandler(async (req, res) => {
   if (req.user.role !== 'admin' && product.seller.toString() !== req.user._id.toString()) {
     res.status(403);
     throw new Error('You can only edit your own products');
+  }
+
+  if (Array.isArray(req.body.images) && req.body.images.length > 5) {
+    res.status(400);
+    throw new Error('Maximum 5 product images allowed');
   }
 
   // Strip local host prefix from image URL if present
@@ -174,6 +193,9 @@ const updateProduct = asyncHandler(async (req, res) => {
   await product.save();
   const doc = product.toJSON();
   doc.image = resolveImageUrl(doc.image);
+  if (Array.isArray(doc.images)) {
+    doc.images = doc.images.map(resolveImageUrl);
+  }
   res.json(doc);
 });
 

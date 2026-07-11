@@ -13,6 +13,7 @@ const productSchema = new mongoose.Schema(
     description: { type: String, required: true },
     price: { type: Number, required: true, min: 0 }, // PKR
     discountPrice: { type: Number, default: null },
+    discountEvent: { type: String, default: '' },
     stock: { type: Number, required: true, min: 0, default: 0 },
     image: { type: String, default: '' }, // primary thumbnail (matches frontend field)
     images: { type: [String], default: [] },
@@ -41,6 +42,21 @@ const productSchema = new mongoose.Schema(
     },
   }
 );
+
+const sanitizeHtml = require('sanitize-html');
+
+productSchema.pre('save', function (next) {
+  if (this.isModified('description') && this.description) {
+    this.description = sanitizeHtml(this.description, {
+      allowedTags: sanitizeHtml.defaults.allowedTags.concat(['img']),
+      allowedAttributes: {
+        ...sanitizeHtml.defaults.allowedAttributes,
+        img: ['src', 'alt', 'width', 'height'],
+      },
+    });
+  }
+  next();
+});
 
 productSchema.index({ shop: 1, isPublished: 1, createdAt: -1 });
 productSchema.index({ category: 1, isPublished: 1 });

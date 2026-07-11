@@ -24,6 +24,7 @@ const SHOPS_DATA = [
     shopName: 'Punjab Cultural Hub',
     shopDesc: 'Vibrant and authentic cultural products, textiles, and local crafts from the heart of Punjab.',
     shopLogo: unsplash('1563245372-f21724e3856d'),
+    deliveryCharges: 300,
     products: [
       {
         name: 'Vibrant Phulkari Dupatta',
@@ -79,6 +80,7 @@ const SHOPS_DATA = [
     shopName: 'Khyber Pass Traders',
     shopDesc: 'Traditional Swati shawls, Peshawari footwear, and regional goods from KPK.',
     shopLogo: unsplash('1603487742131-4160ec999306'),
+    deliveryCharges: 350,
     products: [
       {
         name: 'Peshawari Chappal (Double Sole)',
@@ -134,6 +136,7 @@ const SHOPS_DATA = [
     shopName: 'Balochistan Heritage Crafts',
     shopDesc: 'Tribal embroidery, mirror work, and authentic regional foods of Balochistan.',
     shopLogo: unsplash('1509319117193-57bab727e09d'),
+    deliveryCharges: 400,
     products: [
       {
         name: 'Balochi Mirror-Work Dress',
@@ -234,6 +237,7 @@ async function seedNewRegionalShops() {
       description: shopData.shopDesc,
       logo: shopLogoUrl,
       isActive: true,
+      deliveryCharges: shopData.deliveryCharges || 200,
     });
     console.log(`Created shop: "${shop.name}"`);
 

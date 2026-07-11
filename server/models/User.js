@@ -47,6 +47,9 @@ const userSchema = new mongoose.Schema(
     address: { type: addressSchema, default: {} },
     resetPasswordToken: { type: String, select: false },
     resetPasswordExpire: { type: Date, select: false },
+    resetOTP: { type: String, select: false },
+    resetOTPExpire: { type: Date, select: false },
+    resetOTPTries: { type: Number, default: 0, select: false },
   },
   {
     timestamps: true,
@@ -59,6 +62,9 @@ const userSchema = new mongoose.Schema(
         delete ret.password;
         delete ret.resetPasswordToken;
         delete ret.resetPasswordExpire;
+        delete ret.resetOTP;
+        delete ret.resetOTPExpire;
+        delete ret.resetOTPTries;
         return ret;
       },
     },
@@ -82,6 +88,15 @@ userSchema.methods.createPasswordResetToken = function createPasswordResetToken(
   this.resetPasswordToken = crypto.createHash('sha256').update(rawToken).digest('hex');
   this.resetPasswordExpire = Date.now() + 15 * 60 * 1000; // 15 min
   return rawToken;
+};
+
+// Create a 6-digit password reset OTP: returns the raw OTP and stores its SHA-256 hash.
+userSchema.methods.createPasswordResetOTP = function createPasswordResetOTP() {
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  this.resetOTP = crypto.createHash('sha256').update(otp).digest('hex');
+  this.resetOTPExpire = Date.now() + 10 * 60 * 1000; // 10 minutes expiry
+  this.resetOTPTries = 0;
+  return otp;
 };
 
 module.exports = mongoose.model('User', userSchema);

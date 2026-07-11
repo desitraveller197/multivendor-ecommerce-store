@@ -40,6 +40,8 @@ const orderSchema = new mongoose.Schema(
     itemsPrice: { type: Number, default: 0 },
     shippingPrice: { type: Number, default: 0 },
     taxPrice: { type: Number, default: 0 },
+    voucherCode: { type: String, default: '' },
+    voucherDiscount: { type: Number, default: 0 },
     totalPrice: { type: Number, default: 0 },
     orderStatus: {
       type: String,
@@ -54,6 +56,7 @@ const orderSchema = new mongoose.Schema(
     gatewayTxnRef: { type: String, index: true, sparse: true },
     stripePaymentIntentId: { type: String, index: true, sparse: true }, // legacy
     paymentReceipt: { type: String, default: '' },
+    orderNumber: { type: String, unique: true, sparse: true, index: true },
   },
   {
     timestamps: true,
@@ -68,6 +71,22 @@ const orderSchema = new mongoose.Schema(
     },
   }
 );
+
+orderSchema.pre('save', async function (next) {
+  if (this.isNew && !this.orderNumber) {
+    const year = new Date().getFullYear();
+    const counterId = `orders-${year}`;
+    const Counter = require('./Counter');
+    const counter = await Counter.findOneAndUpdate(
+      { id: counterId },
+      { $inc: { seq: 1 } },
+      { new: true, upsert: true }
+    );
+    const seqNumber = String(counter.seq).padStart(5, '0');
+    this.orderNumber = `ORD-${year}-${seqNumber}`;
+  }
+  next();
+});
 
 orderSchema.index({ 'orderItems.seller': 1, createdAt: -1 });
 

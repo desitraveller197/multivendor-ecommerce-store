@@ -26,6 +26,18 @@ const messageSchema = new mongoose.Schema(
   }
 );
 
+const sanitizeHtml = require('sanitize-html');
+
+messageSchema.pre('save', function (next) {
+  if (this.isModified('text') && this.text) {
+    this.text = sanitizeHtml(this.text, {
+      allowedTags: [],
+      allowedAttributes: {},
+    });
+  }
+  next();
+});
+
 messageSchema.index({ conversation: 1, createdAt: -1 });
 
 module.exports = mongoose.model('Message', messageSchema);

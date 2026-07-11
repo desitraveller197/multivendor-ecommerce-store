@@ -30,11 +30,11 @@ const PAYMENT_METHODS = [
   { name: 'Cash on Delivery', logo: '/images/payments/cod.svg', description: 'Pay when you receive' },
   { name: 'Visa', logo: '/images/payments/visa.svg', description: 'Debit & credit cards' },
   { name: 'Mastercard', logo: '/images/payments/mastercard.svg', description: 'Debit & credit cards' },
-  { name: 'PayPak', logo: '/images/payments/paypak.svg', description: 'Local card network' },
 ]
 
 function Footer() {
   const { items } = useSelector((state) => state.products)
+  const { isAuthenticated, role } = useSelector((state) => state.auth)
   const [reviews, setReviews] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -171,11 +171,11 @@ function Footer() {
           <p className="mt-1 text-sm text-slate-600">
             Secure checkout with the payment options available on Bazarix
           </p>
-          <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+          <div className="mt-4 flex flex-wrap justify-center gap-3">
             {PAYMENT_METHODS.map((method) => (
               <div
                 key={method.name}
-                className="flex flex-col items-center rounded-xl border border-slate-100 bg-white p-3 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md"
+                className="flex w-[140px] sm:w-[160px] flex-col items-center rounded-xl border border-slate-100 bg-white p-3 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md"
                 title={method.description}
               >
                 <img
@@ -225,26 +225,34 @@ function Footer() {
           <div>
             <p className="font-semibold text-slate-900">Account</p>
             <ul className="mt-3 space-y-2 text-sm text-slate-600">
-              <li>
-                <Link to="/login" className="hover:text-blue-700">
-                  Login
-                </Link>
-              </li>
-              <li>
-                <Link to="/register" className="hover:text-blue-700">
-                  Register
-                </Link>
-              </li>
-              <li>
-                <Link to="/cart" className="hover:text-blue-700">
-                  Cart
-                </Link>
-              </li>
-              <li>
-                <Link to="/wishlist" className="hover:text-blue-700">
-                  Wishlist
-                </Link>
-              </li>
+              {!isAuthenticated && (
+                <>
+                  <li>
+                    <Link to="/login" className="hover:text-blue-700">
+                      Login
+                    </Link>
+                  </li>
+                  <li>
+                    <Link to="/register" className="hover:text-blue-700">
+                      Register
+                    </Link>
+                  </li>
+                </>
+              )}
+              {isAuthenticated && role === 'customer' && (
+                <>
+                  <li>
+                    <Link to="/cart" className="hover:text-blue-700">
+                      Cart
+                    </Link>
+                  </li>
+                  <li>
+                    <Link to="/wishlist" className="hover:text-blue-700">
+                      Wishlist
+                    </Link>
+                  </li>
+                </>
+              )}
             </ul>
           </div>
           <div>

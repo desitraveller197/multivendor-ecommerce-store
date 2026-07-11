@@ -1,139 +1,211 @@
 import { useEffect, useState } from 'react'
+import PageFrame from '../../components/PageFrame'
+import Sidebar from '../../components/Sidebar'
 import axiosInstance from '../../api/axiosConfig'
 import { USE_MOCK, delay } from '../../api/mockApi'
-import Sidebar from '../../components/Sidebar'
-import PageFrame from '../../components/PageFrame'
-
-const fetchCategories = async () => {
-  if (USE_MOCK) {
-    await delay(500)
-    return [
-      { id: 1, name: 'Clothing' },
-      { id: 2, name: 'Shawls & Dupattas' },
-      { id: 3, name: 'Footwear (Chappals)' },
-      { id: 4, name: 'Handicrafts & Decor' },
-      { id: 5, name: 'Organic Beauty' },
-      { id: 6, name: 'Local Foods' },
-    ]
-  }
-  const res = await axiosInstance.get('/categories')
-  return res.data
-}
-
-const addCategoryApi = async (name) => {
-  if (USE_MOCK) {
-    await delay(400)
-    return { id: Date.now(), name }
-  }
-  const res = await axiosInstance.post('/categories', { name })
-  return res.data
-}
-
-const deleteCategoryApi = async (id) => {
-  if (USE_MOCK) {
-    await delay(400)
-    return { success: true }
-  }
-  await axiosInstance.delete(`/categories/${id}`)
-  return { success: true }
-}
 
 function ManageCategories() {
   const [categories, setCategories] = useState([])
-  const [newCategory, setNewCategory] = useState('')
   const [loading, setLoading] = useState(true)
-  const [inputError, setInputError] = useState('')
+  const [error, setError] = useState('')
+  const [newName, setNewName] = useState('')
+  const [adding, setAdding] = useState(false)
+
+  // Track which category is being edited inline
+  const [editingId, setEditingId] = useState(null)
+  const [editingName, setEditingName] = useState('')
+  const [savingId, setSavingId] = useState(null)
+
+  async function loadCategories() {
+    setLoading(true)
+    setError('')
+    try {
+      if (USE_MOCK) {
+        await delay(400)
+        setCategories([
+          { _id: '1', id: '1', name: 'Clothing' },
+          { _id: '2', id: '2', name: 'Home Accessories' },
+        ])
+      } else {
+        const res = await axiosInstance.get('/categories')
+        setCategories(res.data || [])
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to fetch categories.')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
-    let isMounted = true
-    const run = async () => {
-      setLoading(true)
-      try {
-        const data = await fetchCategories()
-        if (isMounted) setCategories(data)
-      } catch (err) {
-        console.error(err)
-      } finally {
-        if (isMounted) setLoading(false)
-      }
-    }
-    run()
-    return () => { isMounted = false }
+    loadCategories()
   }, [])
 
-  const handleAdd = async () => {
-    if (!newCategory.trim()) {
-      setInputError('Category name cannot be empty')
-      return
-    }
-    setInputError('')
+  const handleAdd = async (e) => {
+    e.preventDefault()
+    if (!newName.trim()) return
+    setAdding(true)
+    setError('')
     try {
-      const added = await addCategoryApi(newCategory.trim())
-      setCategories((prev) => [...prev, added])
-      setNewCategory('')
+      if (USE_MOCK) {
+        await delay(500)
+        const mockNew = { _id: Date.now().toString(), name: newName.trim() }
+        setCategories((prev) => [...prev, mockNew])
+        setNewName('')
+      } else {
+        const res = await axiosInstance.post('/categories', { name: newName.trim() })
+        setCategories((prev) => [...prev, res.data])
+        setNewName('')
+      }
     } catch (err) {
-      console.error(err)
+      setError(err.response?.data?.message || 'Failed to add category.')
+    } finally {
+      setAdding(false)
     }
   }
 
-  const handleDelete = async (id) => {
+  const handleStartEdit = (cat) => {
+    setEditingId(cat._id || cat.id)
+    setEditingName(cat.name)
+  }
+
+  const handleSaveEdit = async (catId) => {
+    if (!editingName.trim()) return
+    setSavingId(catId)
+    setError('')
     try {
-      await deleteCategoryApi(id)
-      setCategories((prev) => prev.filter((item) => item.id !== id))
+      if (USE_MOCK) {
+        await delay(400)
+        setCategories((prev) =>
+          prev.map((c) => ((c._id || c.id) === catId ? { ...c, name: editingName.trim() } : c))
+        )
+      } else {
+        const res = await axiosInstance.put(`/categories/${catId}`, { name: editingName.trim() })
+        setCategories((prev) =>
+          prev.map((c) => ((c._id || c.id) === catId ? res.data : c))
+        )
+      }
+      setEditingId(null)
     } catch (err) {
-      console.error(err)
+      setError(err.response?.data?.message || 'Failed to update category.')
+    } finally {
+      setSavingId(null)
     }
   }
+
+  const handleDelete = async (catId) => {
+    if (!window.confirm('Are you sure you want to delete this category?')) return
+    setError('')
+    try {
+      if (USE_MOCK) {
+        await delay(400)
+        setCategories((prev) => prev.filter((c) => (c._id || c.id) !== catId))
+      } else {
+        await axiosInstance.delete(`/categories/${catId}`)
+        setCategories((prev) => prev.filter((c) => (c._id || c.id) !== catId))
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to delete category.')
+    }
+  }
+
+  const inputClass = 'rounded border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500 disabled:bg-slate-50'
 
   return (
-    <PageFrame title="Manage Categories" description="Add or remove the product categories used across the store.">
+    <PageFrame title="Manage Categories" description="Add, edit, or remove product categories.">
       <div className="grid gap-4 md:grid-cols-[240px_1fr]">
         <Sidebar role="admin" />
-        <div className="rounded-lg bg-white p-6 shadow-sm">
-        <div className="mt-1 flex flex-col gap-1">
-          <div className="flex gap-2">
-            <input
-              className={`flex-1 rounded border px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 ${inputError ? 'border-red-400' : 'border-slate-300'}`}
-              placeholder="New category name"
-              value={newCategory}
-              onChange={(event) => {
-                setNewCategory(event.target.value)
-                if (inputError) setInputError('')
-              }}
-            />
-            <button
-              className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-all duration-300 hover:-translate-y-0.5 hover:bg-blue-700 hover:shadow-md focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-              onClick={handleAdd}
-            >
-              Add
-            </button>
-          </div>
-          {inputError && <span className="text-xs text-red-500">{inputError}</span>}
-        </div>
-        <div className="mt-4 space-y-2">
-          {loading ? (
-            <>
-              <div className="h-12 animate-pulse rounded-lg bg-slate-100" />
-              <div className="h-12 animate-pulse rounded-lg bg-slate-100" />
-              <div className="h-12 animate-pulse rounded-lg bg-slate-100" />
-            </>
-          ) : (
-            categories.map((category) => (
-              <div
-                key={category.id}
-                className="flex items-center justify-between rounded-lg border border-slate-200 p-3 transition-all duration-200 hover:border-slate-300 hover:shadow-sm"
+        
+        <div className="space-y-6">
+          <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+            <h3 className="text-sm font-semibold text-slate-900 mb-3">Add New Category</h3>
+            <form onSubmit={handleAdd} className="flex gap-2">
+              <input
+                required
+                type="text"
+                disabled={adding}
+                placeholder="Category name, e.g. Handicrafts"
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                className={`${inputClass} flex-1`}
+              />
+              <button
+                type="submit"
+                disabled={adding || !newName.trim()}
+                className="rounded bg-blue-600 px-4 py-1.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
               >
-                <span className="font-medium text-slate-800">{category.name}</span>
-                <button
-                  className="rounded-md bg-red-500 px-3 py-1.5 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-red-600 hover:shadow-sm"
-                  onClick={() => handleDelete(category.id)}
-                >
-                  Delete
-                </button>
+                {adding ? 'Adding...' : 'Add'}
+              </button>
+            </form>
+          </div>
+
+          <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+            <h3 className="text-sm font-semibold text-slate-900 mb-3">Existing Categories</h3>
+            {error && <p className="mb-3 text-xs text-red-500 font-semibold">{error}</p>}
+            
+            {loading && categories.length === 0 ? (
+              <p className="text-sm text-slate-500">Loading categories...</p>
+            ) : categories.length === 0 ? (
+              <p className="text-sm text-slate-400">No categories found.</p>
+            ) : (
+              <div className="divide-y divide-slate-100">
+                {categories.map((cat) => {
+                  const catId = cat._id || cat.id
+                  const isEditing = editingId === catId
+                  const isSaving = savingId === catId
+
+                  return (
+                    <div key={catId} className="flex items-center justify-between py-3">
+                      {isEditing ? (
+                        <div className="flex items-center gap-2 flex-1 mr-4">
+                          <input
+                            type="text"
+                            disabled={isSaving}
+                            value={editingName}
+                            onChange={(e) => setEditingName(e.target.value)}
+                            className={`${inputClass} flex-1`}
+                          />
+                          <button
+                            onClick={() => handleSaveEdit(catId)}
+                            disabled={isSaving || !editingName.trim()}
+                            className="rounded bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
+                          >
+                            {isSaving ? 'Saving...' : 'Save'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setEditingId(null)}
+                            disabled={isSaving}
+                            className="rounded bg-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-300"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          <span className="text-sm text-slate-900 font-medium">{cat.name}</span>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => handleStartEdit(cat)}
+                              className="rounded bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-200"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => handleDelete(catId)}
+                              className="rounded bg-rose-50 px-2.5 py-1 text-xs font-semibold text-rose-600 hover:bg-rose-100"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )
+                })}
               </div>
-            ))
-          )}
-        </div>
+            )}
+          </div>
         </div>
       </div>
     </PageFrame>

@@ -222,36 +222,55 @@ const forgotPassword = asyncHandler(async (req, res) => {
   const user = await User.findOne({ email });
 
   if (user) {
-    const rawToken = user.createPasswordResetToken();
+    const otp = user.createPasswordResetOTP();
     await user.save({ validateBeforeSave: false });
-    const resetUrl = `${process.env.CLIENT_URL || 'http://localhost:5173'}/reset-password?token=${rawToken}`;
+
     await sendEmail({
       to: user.email,
-      subject: 'Password Reset — Multivendor Store',
-      text: `Reset your password using this link (valid 15 minutes): ${resetUrl}`,
-      html: `<p>Reset your password using the link below (valid 15 minutes):</p><p><a href="${resetUrl}">${resetUrl}</a></p>`,
+      subject: 'Your Password Reset OTP — Bazarix',
+      text: `Your password reset OTP is ${otp}. It will expire in 10 minutes.`,
+      html: `<p>Your password reset OTP is:</p><h2 style="font-size:24px;color:#1d4ed8;letter-spacing:2px;">${otp}</h2><p>This code is valid for 10 minutes and will expire after 5 failed verification attempts.</p>`,
     });
   }
 
-  res.json({ message: 'If that email exists, a reset link has been sent.' });
+  res.json({ message: 'If that email exists, an OTP has been sent.' });
 });
 
-// POST /api/auth/reset-password/:token  (public)
+// POST /api/auth/reset-password  (public)
 const resetPassword = asyncHandler(async (req, res) => {
-  const hashed = crypto.createHash('sha256').update(req.params.token).digest('hex');
-  const user = await User.findOne({
-    resetPasswordToken: hashed,
-    resetPasswordExpire: { $gt: Date.now() },
-  }).select('+resetPasswordToken +resetPasswordExpire');
+  const { email, otp, password } = req.body;
 
+  const user = await User.findOne({ email }).select('+resetOTP +resetOTPExpire +resetOTPTries');
   if (!user) {
     res.status(400);
-    throw new Error('Reset token is invalid or has expired');
+    throw new Error('User not found');
   }
 
-  user.password = req.body.password;
-  user.resetPasswordToken = undefined;
-  user.resetPasswordExpire = undefined;
+  if (!user.resetOTPExpire || user.resetOTPExpire < Date.now()) {
+    res.status(400);
+    throw new Error('OTP has expired. Please request a new one.');
+  }
+
+  if (user.resetOTPTries >= 5) {
+    res.status(400);
+    throw new Error('Too many failed attempts. Please request a new OTP.');
+  }
+
+  const hashedOtp = crypto.createHash('sha256').update(String(otp || '').trim()).digest('hex');
+
+  if (user.resetOTP !== hashedOtp) {
+    user.resetOTPTries += 1;
+    await user.save({ validateBeforeSave: false });
+
+    const remaining = 5 - user.resetOTPTries;
+    res.status(400);
+    throw new Error(`Invalid OTP. You have ${remaining} attempts remaining.`);
+  }
+
+  user.password = password;
+  user.resetOTP = undefined;
+  user.resetOTPExpire = undefined;
+  user.resetOTPTries = undefined;
   await user.save();
 
   res.json({ message: 'Password has been reset successfully' });

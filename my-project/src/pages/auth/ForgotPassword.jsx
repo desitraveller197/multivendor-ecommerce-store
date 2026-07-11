@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import axiosInstance from '../../api/axiosConfig'
 import { USE_MOCK, delay } from '../../api/mockApi'
 
 function ForgotPassword() {
+  const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -17,13 +18,16 @@ function ForgotPassword() {
     try {
       if (USE_MOCK) {
         await delay(800)
-        setSuccess('Password reset link sent to your email.')
+        setSuccess('Password reset OTP sent to your email.')
       } else {
         await axiosInstance.post('/auth/forgot-password', { email })
-        setSuccess('Password reset link sent to your email.')
+        setSuccess('Password reset OTP sent to your email.')
       }
+      setTimeout(() => {
+        navigate(`/reset-password?email=${encodeURIComponent(email)}`)
+      }, 1500)
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to send reset link. Please try again.')
+      setError(err.response?.data?.message || 'Failed to send reset code. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -34,11 +38,11 @@ function ForgotPassword() {
   return (
     <section className="mx-auto max-w-md rounded-lg bg-white p-6 shadow-sm">
       <h1 className="text-2xl font-bold text-slate-900">Forgot Password</h1>
-      <p className="mt-2 text-sm text-slate-600">Enter your email to receive a reset link.</p>
+      <p className="mt-2 text-sm text-slate-600">Enter your email to receive a 6-digit numeric OTP code.</p>
       
       {success ? (
         <div className="mt-5 rounded bg-green-100 p-3 text-sm text-green-700">
-          {success}
+          {success} Redirecting to enter code...
         </div>
       ) : (
         <form className="mt-5 space-y-4" onSubmit={handleSubmit}>
@@ -63,9 +67,9 @@ function ForgotPassword() {
             {loading ? (
               <span className="inline-flex items-center gap-2">
                 <span className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                Sending…
+                Sending OTP…
               </span>
-            ) : 'Send Reset Link'}
+            ) : 'Send Reset OTP'}
           </button>
         </form>
       )}

@@ -15,6 +15,7 @@ router.post(
   validate([body('name').trim().notEmpty().withMessage('Category name is required')]),
   ctrl.createCategory
 );
+router.put('/:id', protect, authorize('admin'), ctrl.updateCategory);
 router.delete('/:id', protect, authorize('admin'), ctrl.deleteCategory);
 
 module.exports = router;

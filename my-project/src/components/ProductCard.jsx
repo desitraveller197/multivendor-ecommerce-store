@@ -16,8 +16,17 @@ function ProductCard({ product, onAddToCart, linkToDetail = false }) {
     }
   }
 
+  const discountPercent = product.price > 0 && product.discountPrice
+    ? Math.round(((product.price - product.discountPrice) / product.price) * 100)
+    : 0;
+
   return (
     <article className="relative flex h-[420px] w-full flex-col rounded-lg border border-slate-100 bg-white p-4 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
+      {product.discountEvent && (
+        <div className="absolute left-3 top-3 z-10 rounded bg-red-600 px-2.5 py-1 text-[10px] font-bold text-white uppercase tracking-wider shadow-sm">
+          🔥 {product.discountEvent}
+        </div>
+      )}
       <button
         type="button"
         aria-label={isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
@@ -67,25 +76,44 @@ function ProductCard({ product, onAddToCart, linkToDetail = false }) {
       )}
       <p className="mt-1 truncate text-sm text-slate-500">{product.category}</p>
       <p className="mt-2 truncate text-sm text-slate-500">{product.sellerName ?? product.seller}</p>
-      <div className="mt-3 flex items-center gap-2">
-        <p className="text-xl font-bold text-blue-700">PKR {product.discountPrice ?? product.price}</p>
+      <div className="mt-3 flex items-center gap-1.5 whitespace-nowrap overflow-hidden text-ellipsis">
+        <p className="text-lg font-bold text-blue-700">PKR {product.discountPrice ?? product.price}</p>
         {product.discountPrice ? (
-          <p className="text-sm text-slate-400 line-through">PKR {product.price}</p>
+          <>
+            <p className="text-xs text-slate-400 line-through">PKR {product.price}</p>
+            {discountPercent > 0 && (
+              <span className="text-[10px] font-bold text-green-600">({discountPercent}% OFF)</span>
+            )}
+          </>
         ) : null}
       </div>
-      {(product.rating > 0 || product.numReviews > 0) ? (
-        <div className="mt-2 flex items-center gap-1.5">
-          <StarRating value={product.rating || 0} size="sm" showValue />
-          {product.numReviews > 0 ? (
-            <span className="text-xs text-slate-400">({product.numReviews})</span>
-          ) : null}
-        </div>
-      ) : null}
+      <div className="mt-2 flex items-center justify-between min-h-[1.5rem]">
+        {product.stock > 0 ? (
+          <span className="inline-flex items-center gap-1 rounded bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700">
+            <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
+            In Stock
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-1 rounded bg-red-50 px-2 py-0.5 text-xs font-medium text-red-700">
+            <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
+            Out of Stock
+          </span>
+        )}
+        {(product.rating > 0 || product.numReviews > 0) ? (
+          <div className="flex items-center gap-1.5">
+            <StarRating value={product.rating || 0} size="sm" showValue />
+            {product.numReviews > 0 ? (
+              <span className="text-xs text-slate-400">({product.numReviews})</span>
+            ) : null}
+          </div>
+        ) : null}
+      </div>
       <button
-        className="mt-auto w-full rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-all duration-300 hover:-translate-y-0.5 hover:bg-blue-700 hover:shadow-md"
+        disabled={product.stock <= 0}
+        className="mt-auto w-full rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-all duration-300 hover:-translate-y-0.5 hover:bg-blue-700 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:transform-none"
         onClick={() => onAddToCart(product)}
       >
-        Add to Cart
+        {product.stock > 0 ? 'Add to Cart' : 'Out of Stock'}
       </button>
     </article>
   )

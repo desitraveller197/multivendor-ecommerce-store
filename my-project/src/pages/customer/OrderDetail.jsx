@@ -12,37 +12,89 @@ function OrderDetail() {
   const [order, setOrder] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [cancelling, setCancelling] = useState(false)
+
+  const [refundReason, setRefundReason] = useState('')
+  const [showRefundForm, setShowRefundForm] = useState(false)
+  const [refundSubmitting, setRefundSubmitting] = useState(false)
+  const [refundSuccess, setRefundSuccess] = useState('')
+  const [refundError, setRefundError] = useState('')
+
+  const fetchOrder = async () => {
+    try {
+      if (USE_MOCK) {
+        await delay(600)
+        setOrder({
+          id: 'ORD-001',
+          orderNumber: 'ORD-2026-00001',
+          status: 'Delivered',
+          paymentMethod: 'Stripe',
+          amount: 3200,
+          date: '2026-05-01',
+          isPaid: true,
+          address: { street: 'Street 22', city: 'Lahore', province: 'Punjab', postal: '54000' },
+          items: [
+            { id: 1, name: 'Phulkari Dupatta', quantity: 1, price: 2800 },
+            { id: 2, name: 'Lahori Jutti', quantity: 1, price: 400 },
+          ]
+        })
+      } else {
+        const res = await axiosInstance.get(`/orders/${id}`)
+        setOrder(res.data)
+      }
+    } catch (err) {
+      console.error('Failed to fetch order details:', err)
+      setError('Failed to load order details.')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
-    const fetchOrder = async () => {
-      try {
-        if (USE_MOCK) {
-          await delay(600)
-          setOrder({
-            id: 'ORD-001',
-            status: 'Delivered',
-            paymentMethod: 'Stripe',
-            amount: 3200,
-            date: '2026-05-01',
-            address: { street: 'Street 22', city: 'Lahore', province: 'Punjab', postal: '54000' },
-            items: [
-              { id: 1, name: 'Phulkari Dupatta', quantity: 1, price: 2800 },
-              { id: 2, name: 'Lahori Jutti', quantity: 1, price: 400 },
-            ]
-          })
-        } else {
-          const res = await axiosInstance.get(`/orders/${id}`)
-          setOrder(res.data)
-        }
-      } catch (err) {
-        console.error('Failed to fetch order details:', err)
-        setError('Failed to load order details.')
-      } finally {
-        setLoading(false)
-      }
-    }
     fetchOrder()
   }, [id])
+
+  const handleCancelOrder = async () => {
+    if (!window.confirm('Are you sure you want to cancel this order?')) return
+    setCancelling(true)
+    try {
+      if (USE_MOCK) {
+        await delay(500)
+        setOrder((prev) => ({ ...prev, status: 'Cancelled' }))
+      } else {
+        const res = await axiosInstance.patch(`/orders/${id}/cancel`)
+        setOrder(res.data.order)
+      }
+      alert('Order cancelled successfully!')
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to cancel order.')
+    } finally {
+      setCancelling(false)
+    }
+  }
+
+  const handleRefundRequest = async (e) => {
+    e.preventDefault()
+    if (!refundReason.trim()) return
+    setRefundSubmitting(true)
+    setRefundError('')
+    setRefundSuccess('')
+    try {
+      if (USE_MOCK) {
+        await delay(500)
+        setRefundSuccess('Refund request submitted successfully!')
+      } else {
+        await axiosInstance.post(`/orders/${id}/refund-request`, { reason: refundReason.trim() })
+        setRefundSuccess('Refund request submitted successfully!')
+      }
+      setShowRefundForm(false)
+      setRefundReason('')
+    } catch (err) {
+      setRefundError(err.response?.data?.message || 'Failed to submit refund request.')
+    } finally {
+      setRefundSubmitting(false)
+    }
+  }
 
   const getBadgeClass = (statusStr) => {
     switch (String(statusStr).toLowerCase()) {
@@ -62,6 +114,9 @@ function OrderDetail() {
       day: '2-digit',
     })
   }
+
+  const isCancellable = order && ['pending', 'processing'].includes(String(order.status).toLowerCase())
+  const isRefundable = order && (order.status === 'Delivered' || (order.isPaid && String(order.status).toLowerCase() !== 'cancelled' && String(order.status).toLowerCase() !== 'refunded'))
 
   return (
     <PageFrame title="Order Detail" description="Full details and shipping status for your order.">
@@ -83,7 +138,6 @@ function OrderDetail() {
         <p className="mt-4 text-slate-600">Order not found.</p>
       ) : order ? (
         <div className="mt-6 space-y-6 text-slate-700">
-          {/* Shipping Journey Timeline Stepper */}
           {String(order.status).toLowerCase() === 'cancelled' ? (
             <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-800">
               ⚠️ This order has been cancelled.
@@ -92,7 +146,6 @@ function OrderDetail() {
             <div className="rounded-xl border border-slate-100 bg-slate-50 p-6 shadow-sm">
               <h3 className="text-sm font-semibold text-slate-800">Shipping Journey</h3>
               <div className="mt-6 relative flex items-center justify-between">
-                {/* Connector line */}
                 <div className="absolute left-0 right-0 top-1/2 h-0.5 -translate-y-1/2 bg-slate-200" />
                 <div 
                   className="absolute left-0 top-1/2 h-0.5 -translate-y-1/2 bg-blue-600 transition-all duration-500" 
@@ -150,8 +203,8 @@ function OrderDetail() {
 
           <div className="grid gap-4 md:grid-cols-2">
             <div>
-              <p className="text-sm font-semibold text-slate-500">Order ID</p>
-              <p className="font-medium text-slate-900">{order.id}</p>
+              <p className="text-sm font-semibold text-slate-500">Order number</p>
+              <p className="font-bold text-slate-950 text-base">{order.orderNumber || order.id}</p>
             </div>
             <div>
               <p className="text-sm font-semibold text-slate-500">Date</p>
@@ -204,10 +257,49 @@ function OrderDetail() {
             </table>
           </div>
 
-          <div className="pt-2">
-            <p className="mb-1 text-sm text-slate-500">Rate your purchase</p>
-            <StarRating value={4} />
-          </div>
+          {order.status === 'Delivered' && (
+            <div className="pt-2">
+              <p className="mb-1 text-sm text-slate-500 font-semibold">Rate your purchase</p>
+              <StarRating value={4} />
+            </div>
+          )}
+
+          {showRefundForm && (
+            <form onSubmit={handleRefundRequest} className="border border-slate-200 rounded-xl bg-slate-50 p-4 space-y-3">
+              <h3 className="text-sm font-semibold text-slate-800">Submit Refund Request</h3>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs text-slate-500 font-medium">Reason for Refund</label>
+                <textarea
+                  required
+                  rows={2}
+                  disabled={refundSubmitting}
+                  value={refundReason}
+                  onChange={(e) => setRefundReason(e.target.value)}
+                  placeholder="Explain why you are requesting a refund..."
+                  className="w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
+                />
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="submit"
+                  disabled={refundSubmitting || !refundReason.trim()}
+                  className="rounded bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+                >
+                  {refundSubmitting ? 'Submitting...' : 'Submit'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowRefundForm(false)}
+                  className="rounded bg-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-300"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          )}
+
+          {refundSuccess && <p className="text-xs text-green-600 font-semibold">{refundSuccess}</p>}
+          {refundError && <p className="text-xs text-red-500">{refundError}</p>}
           
           <div className="flex flex-wrap gap-3 pt-2">
             {[...new Set((order.items || []).map((item) => item.sellerId).filter(Boolean))].map(
@@ -217,12 +309,33 @@ function OrderDetail() {
                   recipientId={sellerId}
                   type="order"
                   orderId={order.id}
-                  subject={`Order #${String(order.id).slice(-6)}`}
+                  subject={`Order #${String(order.orderNumber || order.id).slice(-6)}`}
                   label="Chat about this order"
                 />
               ),
             )}
-            <InvoiceDownloadBtn orderId={order.id} />
+            <InvoiceDownloadBtn orderId={order.id} orderNumber={order.orderNumber} />
+
+            {isCancellable && (
+              <button
+                type="button"
+                onClick={handleCancelOrder}
+                disabled={cancelling}
+                className="rounded-md bg-rose-600 px-3 py-2 text-sm font-medium text-white hover:bg-rose-700 disabled:opacity-50 transition"
+              >
+                {cancelling ? 'Cancelling...' : 'Cancel Order'}
+              </button>
+            )}
+
+            {isRefundable && !showRefundForm && !refundSuccess && (
+              <button
+                type="button"
+                onClick={() => setShowRefundForm(true)}
+                className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition"
+              >
+                Request Refund
+              </button>
+            )}
           </div>
         </div>
       ) : null}

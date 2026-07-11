@@ -20,6 +20,7 @@ const EMPTY_FORM = {
   type: 'percentage',
   value: '',
   name: '',
+  event: '',
 }
 
 /** Human-readable summary of what a discount targets. */
@@ -104,10 +105,11 @@ function ManageDiscounts() {
     }
 
     const payload = {
-      name: form.name.trim(),
+      name: form.name.trim() || form.event,
       scope: form.scope,
       type: form.type,
       value,
+      event: form.event,
       ...(form.scope === 'product' ? { product: form.product } : {}),
       ...(form.scope === 'category' ? { category: form.category } : {}),
     }
@@ -262,14 +264,27 @@ function ManageDiscounts() {
               />
             </div>
 
-            <div className="sm:col-span-2">
+            <div>
+              <label className="text-sm font-medium text-slate-700">Special Event Sale</label>
+              <select value={form.event} onChange={updateField('event')} className={inputClass}>
+                <option value="">None / Custom</option>
+                <option value="Eid Sale">Eid Sale</option>
+                <option value="Christmas Sale">Christmas Sale</option>
+                <option value="11.11 Sale">11.11 Sale</option>
+                <option value="Azadi Sale">Azadi Sale</option>
+                <option value="Winter Sale">Winter Sale</option>
+                <option value="Summer Sale">Summer Sale</option>
+              </select>
+            </div>
+
+            <div className="sm:col-span-1">
               <label className="text-sm font-medium text-slate-700">Label (optional)</label>
               <input
                 type="text"
                 value={form.name}
                 onChange={updateField('name')}
                 className={inputClass}
-                placeholder="e.g. Eid Sale"
+                placeholder="e.g. Clearance"
               />
             </div>
 

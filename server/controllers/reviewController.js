@@ -56,7 +56,61 @@ const getProductReviews = asyncHandler(async (req, res) => {
   res.json(reviews.map(formatReview));
 });
 
+// POST /api/reviews/product/:productId  (auth, customer-only)
+const createReview = asyncHandler(async (req, res) => {
+  const { rating, comment } = req.body;
+  const Order = require('../models/Order');
+
+  if (!rating || rating < 1 || rating > 5) {
+    res.status(400);
+    throw new Error('Please provide a rating between 1 and 5');
+  }
+
+  // 1. Verify user purchased this product and the order is paid & delivered
+  const verifiedPurchase = await Order.findOne({
+    customer: req.user._id,
+    orderStatus: 'Delivered',
+    isPaid: true,
+    'orderItems.product': req.params.productId,
+  });
+
+  if (!verifiedPurchase) {
+    res.status(400);
+    throw new Error('You can only review products you have purchased and had delivered.');
+  }
+
+  // 2. Check if already reviewed
+  const exists = await Review.findOne({
+    customer: req.user._id,
+    product: req.params.productId,
+  });
+  if (exists) {
+    res.status(400);
+    throw new Error('You have already submitted a review for this product.');
+  }
+
+  // 3. Create review
+  const review = await Review.create({
+    customer: req.user._id,
+    product: req.params.productId,
+    rating: Number(rating),
+    comment: comment || '',
+  });
+
+  // 4. Update product rating and reviews count
+  const allReviews = await Review.find({ product: req.params.productId });
+  const avgRating = allReviews.reduce((sum, r) => sum + r.rating, 0) / allReviews.length;
+  await Product.findByIdAndUpdate(req.params.productId, {
+    rating: Math.round(avgRating * 10) / 10,
+    numReviews: allReviews.length,
+  });
+
+  const populated = await review.populate('customer', 'name');
+  res.status(201).json(formatReview(populated.toJSON()));
+});
+
 module.exports = {
   getRecentReviews,
   getProductReviews,
+  createReview,
 };

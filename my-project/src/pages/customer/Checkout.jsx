@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
 import axiosInstance from '../../api/axiosConfig'
@@ -71,10 +71,111 @@ function Checkout() {
   const [receiptFile, setReceiptFile] = useState(null)
   const [receiptPreview, setReceiptPreview] = useState('')
 
-  const total = cartItems.reduce(
+  const subtotal = cartItems.reduce(
     (sum, item) => sum + item.quantity * (item.discountPrice ?? item.price),
     0,
   )
+  const [charges, setCharges] = useState({ shipping: 0, tax: 0 })
+
+  const [voucherCode, setVoucherCode] = useState('')
+  const [voucherDiscount, setVoucherDiscount] = useState(0)
+  const [voucherAppliedCode, setVoucherAppliedCode] = useState('')
+  const [voucherError, setVoucherError] = useState('')
+  const [voucherSuccess, setVoucherSuccess] = useState('')
+  const [verifyingVoucher, setVerifyingVoucher] = useState(false)
+
+  const handleApplyVoucher = async () => {
+    if (!voucherCode.trim()) return
+    setVerifyingVoucher(true)
+    setVoucherError('')
+    setVoucherSuccess('')
+    try {
+      if (USE_MOCK) {
+        await delay(500)
+        setVoucherDiscount(Math.round(subtotal * 0.5))
+        setVoucherAppliedCode(voucherCode.trim().toUpperCase())
+        setVoucherSuccess('Voucher applied successfully! 50% discount on products.')
+      } else {
+        const res = await axiosInstance.post('/vouchers/verify', { code: voucherCode.trim() })
+        setVoucherDiscount(Math.round(subtotal * 0.5))
+        setVoucherAppliedCode(res.data.code)
+        setVoucherSuccess('Voucher applied successfully! 50% discount on products.')
+      }
+    } catch (err) {
+      setVoucherError(err.response?.data?.message || 'Invalid or already used voucher code.')
+      setVoucherDiscount(0)
+      setVoucherAppliedCode('')
+    } finally {
+      setVerifyingVoucher(false)
+    }
+  }
+
+  const handleRemoveVoucher = () => {
+    setVoucherCode('')
+    setVoucherDiscount(0)
+    setVoucherAppliedCode('')
+    setVoucherError('')
+    setVoucherSuccess('')
+  }
+
+  useEffect(() => {
+    const fetchCharges = async () => {
+      if (cartItems.length === 0) {
+        setCharges({ shipping: 0, tax: 0 })
+        return
+      }
+      try {
+        const shopGroups = {}
+        cartItems.forEach((item) => {
+          const id = (item.shop && typeof item.shop === 'object')
+            ? (item.shop.id || item.shop._id)
+            : item.shop
+          if (!id) return
+
+          if (!shopGroups[id]) {
+            shopGroups[id] = { itemsPrice: 0 }
+          }
+          shopGroups[id].itemsPrice += item.quantity * (item.discountPrice ?? item.price)
+        })
+
+        if (USE_MOCK) {
+          const uniqueShopIds = Object.keys(shopGroups)
+          const shipping = uniqueShopIds.length * 200
+          setCharges({ shipping, tax: 0 })
+        } else {
+          let totalShipping = 0
+          await Promise.all(
+            Object.keys(shopGroups).map(async (id) => {
+              const res = await axiosInstance.get(`/shops/${id}`)
+              const deliveryCharges = res.data.deliveryCharges || 200
+              
+              totalShipping += deliveryCharges
+            })
+          )
+          setCharges({ shipping: totalShipping, tax: 0 })
+        }
+      } catch (err) {
+        console.error('Error fetching charges:', err)
+        const shopGroups = {}
+        cartItems.forEach((item) => {
+          const id = (item.shop && typeof item.shop === 'object')
+            ? (item.shop.id || item.shop._id)
+            : item.shop
+          if (!id) return
+          if (!shopGroups[id]) {
+            shopGroups[id] = { itemsPrice: 0 }
+          }
+          shopGroups[id].itemsPrice += item.quantity * (item.discountPrice ?? item.price)
+        })
+        const uniqueShopIds = Object.keys(shopGroups)
+        const shipping = uniqueShopIds.length * 200
+        setCharges({ shipping, tax: 0 })
+      }
+    }
+    fetchCharges()
+  }, [cartItems])
+
+  const finalTotal = Math.max(0, subtotal - voucherDiscount + charges.shipping + charges.tax)
 
   const updateCard = (field) => (e) => {
     let value = e.target.value
@@ -143,6 +244,7 @@ function Checkout() {
         address: { street, city, province, postal },
         paymentMethod,
         paymentReceipt: receiptUrl,
+        voucherCode: voucherAppliedCode,
       })
 
       const { payment } = res.data
@@ -276,7 +378,7 @@ function Checkout() {
               ? 'Place Order'
               : paymentMethod === 'JazzCash'
                 ? 'Paid'
-                : `Pay PKR ${total.toFixed(0)} by Card`}
+                : `Pay PKR ${finalTotal.toFixed(0)} by Card`}
           </button>
 
           {/* Upload screenshot section (moved to left side below Paid button) */}
@@ -344,12 +446,31 @@ function Checkout() {
             </li>
           ))}
         </ul>
-        <div className="mt-4 border-t border-slate-100 pt-4 space-y-1">
-          <p className="text-sm text-slate-600">Items: {cartItems.length}</p>
-          <p className="text-sm text-slate-600">
-            Payment: {PAYMENT_METHODS.find((m) => m.value === paymentMethod)?.label || paymentMethod}
-          </p>
-          <p className="text-xl font-bold text-blue-700">Total: PKR {total.toFixed(0)}</p>
+        <div className="mt-4 border-t border-slate-100 pt-4 space-y-2">
+          <div className="flex justify-between text-sm text-slate-600">
+            <span>Subtotal ({cartItems.length} items):</span>
+            <span className="font-medium text-slate-800">PKR {subtotal.toFixed(0)}</span>
+          </div>
+          <div className="flex justify-between text-sm text-slate-600">
+            <span>Delivery Charges:</span>
+            <span className="font-medium text-slate-800">PKR {charges.shipping.toFixed(0)}</span>
+          </div>
+          {voucherDiscount > 0 && (
+            <div className="flex justify-between text-sm text-green-600 font-semibold">
+              <span>Voucher 50% Off:</span>
+              <span>-PKR {voucherDiscount.toFixed(0)}</span>
+            </div>
+          )}
+          <div className="flex justify-between text-sm text-slate-600 border-t border-dashed border-slate-100 pt-2">
+            <span>Payment Mode:</span>
+            <span className="font-medium text-slate-800">
+              {PAYMENT_METHODS.find((m) => m.value === paymentMethod)?.label || paymentMethod}
+            </span>
+          </div>
+          <div className="flex justify-between text-lg font-bold text-blue-700 border-t border-slate-200 pt-2">
+            <span>Total:</span>
+            <span>PKR {finalTotal.toFixed(0)}</span>
+          </div>
           {paymentMethod === 'JazzCash' && (
             <div className="mt-4 border-t border-dashed border-slate-200 pt-4">
               <p className="text-xs font-semibold text-slate-700 mb-2 text-center">Scan to Pay via JazzCash / Raast</p>
@@ -365,6 +486,44 @@ function Checkout() {
               </p>
             </div>
           )}
+          <div className="border-t border-slate-100 pt-4 mt-4">
+            <label className="block text-sm font-semibold text-slate-800 mb-1.5">Have a Voucher Code?</label>
+            {voucherAppliedCode ? (
+              <div className="flex items-center justify-between rounded-lg bg-green-50 border border-green-200 px-3 py-2">
+                <div className="flex flex-col">
+                  <span className="text-xs font-bold text-green-700 uppercase">{voucherAppliedCode} applied</span>
+                  <span className="text-[10px] text-green-600 font-medium">50% discount on items subtotal</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleRemoveVoucher}
+                  className="text-xs font-semibold text-red-600 hover:text-red-800"
+                >
+                  Remove
+                </button>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="e.g. VOUCH-ABCD12"
+                  value={voucherCode}
+                  onChange={(e) => setVoucherCode(e.target.value.toUpperCase())}
+                  className="flex-1 rounded border border-slate-300 px-2.5 py-1.5 text-xs uppercase tracking-wider outline-none focus:border-blue-500"
+                />
+                <button
+                  type="button"
+                  disabled={verifyingVoucher || !voucherCode.trim()}
+                  onClick={handleApplyVoucher}
+                  className="rounded bg-slate-800 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-900 disabled:opacity-50"
+                >
+                  {verifyingVoucher ? '...' : 'Apply'}
+                </button>
+              </div>
+            )}
+            {voucherError && <p className="text-[11px] text-red-500 font-medium mt-1">{voucherError}</p>}
+            {voucherSuccess && <p className="text-[11px] text-green-600 font-medium mt-1">{voucherSuccess}</p>}
+          </div>
         </div>
       </div>
       </div>

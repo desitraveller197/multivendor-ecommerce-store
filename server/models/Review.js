@@ -22,6 +22,18 @@ const reviewSchema = new mongoose.Schema(
   }
 );
 
+const sanitizeHtml = require('sanitize-html');
+
+reviewSchema.pre('save', function (next) {
+  if (this.isModified('comment') && this.comment) {
+    this.comment = sanitizeHtml(this.comment, {
+      allowedTags: [],
+      allowedAttributes: {},
+    });
+  }
+  next();
+});
+
 reviewSchema.index({ product: 1, customer: 1 }, { unique: true });
 
 module.exports = mongoose.model('Review', reviewSchema);

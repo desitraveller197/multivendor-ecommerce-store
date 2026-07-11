@@ -102,7 +102,7 @@ function MyOrders() {
               className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 p-4 transition-all duration-200 hover:border-slate-300 hover:shadow-sm"
             >
               <div>
-                <p className="font-semibold text-slate-900">{order.id}</p>
+                <p className="font-semibold text-slate-900">{order.orderNumber || order.id}</p>
                 <p className="text-xs text-slate-500">{formatDate(order.date)}</p>
                 <p className="text-sm font-bold text-blue-700 mt-0.5">PKR {order.amount}</p>
               </div>

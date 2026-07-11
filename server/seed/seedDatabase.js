@@ -114,30 +114,35 @@ const DEMO_SELLERS = [
     name: 'Punjab Handloom',
     shopName: 'Punjab Handloom',
     shopDesc: 'Authentic Punjabi textiles, phulkari embroidery, and traditional crafts from the heart of Punjab.',
+    deliveryCharges: 250,
   },
   {
     email: 'sindh@store.pk',
     name: 'Sindh Crafts',
     shopName: 'Sindh Crafts Co.',
     shopDesc: 'Ajrak block-prints, Hala pottery, and handcrafted Sindhi heritage products.',
+    deliveryCharges: 300,
   },
   {
     email: 'kpk@store.pk',
     name: 'KPK Heritage',
     shopName: 'KPK Heritage Store',
     shopDesc: 'Swati shawls, Peshawari chappals, pashmina, and mountain-region cultural products.',
+    deliveryCharges: 350,
   },
   {
     email: 'baloch@store.pk',
     name: 'Baloch Artisans',
     shopName: 'Baloch Artisans',
     shopDesc: 'Balochi mirror-work embroidery, tribal jewellery, and traditional Balochistan crafts.',
+    deliveryCharges: 400,
   },
   {
     email: 'seller@store.pk',
     name: 'Demo Seller',
     shopName: 'Bazarix Official Store',
     shopDesc: 'General showcase store with a curated selection of the best Pakistani cultural products.',
+    deliveryCharges: 200,
   },
 ];
 
@@ -191,6 +196,7 @@ async function seed() {
       description: sellerData.shopDesc,
       logo: '',
       isActive: true,
+      deliveryCharges: sellerData.deliveryCharges || 200,
     });
     shopMap[sellerData.shopName] = { shop, sellerUser };
   }

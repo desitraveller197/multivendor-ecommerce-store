@@ -172,7 +172,6 @@ function Messages() {
       socket.off('chat_error', onChatError)
       socket.off('presence_state', onPresenceState)
       socket.off('presence_change', onPresenceChange)
-      disconnectSocket()
     }
   }, [dispatch, isAuthenticated, token, user?.id])
 

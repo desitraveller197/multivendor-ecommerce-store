@@ -2,11 +2,32 @@ const Order = require('../models/Order');
 const Product = require('../models/Product');
 const Shop = require('../models/Shop');
 const Notification = require('../models/Notification');
+const Transaction = require('../models/Transaction');
 const sendEmail = require('../utils/sendEmail');
 const gateway = require('../utils/paymentGateway');
 
 function clientBaseUrl() {
   return process.env.CLIENT_URL || 'http://localhost:5173';
+}
+
+/** Create a transaction record in our append-only log. */
+async function createTransactionRecord(order, status, gatewayRef) {
+  try {
+    const sellerId = order.orderItems?.[0]?.seller || null;
+    await Transaction.create({
+      order: order._id,
+      user: order.customer?._id || order.customer,
+      seller: sellerId,
+      amount: order.totalPrice,
+      currency: 'PKR',
+      paymentMethod: order.paymentMethod,
+      gateway: order.paymentMethod,
+      gatewayReference: gatewayRef || 'N/A',
+      status,
+    });
+  } catch (err) {
+    console.error('Failed to create transaction record:', err.message);
+  }
 }
 
 /**
@@ -26,6 +47,11 @@ async function finalizeOrder(order, result) {
     emailAddress: order.customer?.email,
   };
   await order.save();
+  await createTransactionRecord(order, 'succeeded', result.id || order.gatewayTxnRef);
+
+  const { checkAndAwardVoucher, markVoucherUsed } = require('../utils/voucherHelper');
+  await markVoucherUsed(order);
+  await checkAndAwardVoucher(order);
 
   for (const item of order.orderItems) {
     await Product.updateOne({ _id: item.product }, { $inc: { stock: -item.qty } });
@@ -90,6 +116,7 @@ function gatewayReturn(method) {
       } else if (order && !success) {
         order.orderStatus = 'Cancelled';
         await order.save();
+        await createTransactionRecord(order, 'failed', txnRef);
       }
     } catch (err) {
       console.error(`${method} return error:`, err.message);
@@ -117,6 +144,7 @@ async function simulateReturn(req, res) {
       } else {
         order.orderStatus = 'Cancelled';
         await order.save();
+        await createTransactionRecord(order, 'failed', order.gatewayTxnRef || 'simulated_failed');
       }
     }
   } catch (err) {
@@ -157,6 +185,7 @@ async function stripeCancel(req, res) {
     if (order && order.orderStatus === 'Pending') {
       order.orderStatus = 'Cancelled';
       await order.save();
+      await createTransactionRecord(order, 'failed', order.stripePaymentIntentId || 'stripe_cancelled');
     }
   } catch (err) {
     console.error('Stripe cancel callback error:', err.message);

@@ -23,7 +23,9 @@ function isLive(discount, now = new Date()) {
 /** Does a live discount apply to a given product? */
 function applies(discount, product) {
   if (discount.scope === 'shop') return true;
-  if (discount.scope === 'category') return discount.category === product.category;
+  if (discount.scope === 'category') {
+    return String(discount.category || '').trim().toLowerCase() === String(product.category || '').trim().toLowerCase();
+  }
   if (discount.scope === 'product') return String(discount.product) === String(product._id);
   return false;
 }
@@ -44,17 +46,19 @@ async function recomputeShopDiscounts(sellerId) {
 
   const ops = products.map((product) => {
     let best = null;
+    let winningEvent = '';
     live.forEach((d) => {
       if (!applies(d, product)) return;
       const candidate = priceAfter(product.price, d);
       if (candidate < product.price && (best === null || candidate < best)) {
         best = candidate;
+        winningEvent = d.name || d.event || '';
       }
     });
     return {
       updateOne: {
         filter: { _id: product._id },
-        update: { $set: { discountPrice: best } }, // null clears any previous discount
+        update: { $set: { discountPrice: best, discountEvent: winningEvent } }, // null/empty clears any previous discount
       },
     };
   });
@@ -103,6 +107,7 @@ const createDiscount = asyncHandler(async (req, res) => {
     value: numValue,
     startsAt: startsAt ? new Date(startsAt) : null,
     endsAt: endsAt ? new Date(endsAt) : null,
+    event: req.body.event || '',
   };
 
   if (scope === 'product') {
@@ -134,7 +139,7 @@ const updateDiscount = asyncHandler(async (req, res) => {
     throw new Error('Discount not found');
   }
 
-  const editable = ['name', 'type', 'value', 'active', 'startsAt', 'endsAt'];
+  const editable = ['name', 'type', 'value', 'active', 'startsAt', 'endsAt', 'event'];
   editable.forEach((key) => {
     if (req.body[key] !== undefined) discount[key] = req.body[key];
   });

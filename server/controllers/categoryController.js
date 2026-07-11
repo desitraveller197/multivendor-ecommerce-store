@@ -30,4 +30,29 @@ const deleteCategory = asyncHandler(async (req, res) => {
   res.json({ message: 'Category deleted' });
 });
 
-module.exports = { listCategories, createCategory, deleteCategory };
+// PUT /api/categories/:id  (admin)
+const updateCategory = asyncHandler(async (req, res) => {
+  const { name } = req.body;
+  if (!name?.trim()) {
+    res.status(400);
+    throw new Error('Category name is required');
+  }
+
+  const category = await Category.findById(req.params.id);
+  if (!category) {
+    res.status(404);
+    throw new Error('Category not found');
+  }
+
+  const exists = await Category.findOne({ name: name.trim(), _id: { $ne: category._id } });
+  if (exists) {
+    res.status(400);
+    throw new Error('Category with this name already exists');
+  }
+
+  category.name = name.trim();
+  await category.save();
+  res.json(category);
+});
+
+module.exports = { listCategories, createCategory, deleteCategory, updateCategory };

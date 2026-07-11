@@ -26,11 +26,13 @@ const getMyShop = asyncHandler(async (req, res) => {
 // PUT /api/shops/my  (seller)
 const updateMyShop = asyncHandler(async (req, res) => {
   const shop = await getOrCreateShop(req.user);
-  const { name, description, logo, banner } = req.body;
+  const { name, description, logo, banner, deliveryCharges, taxRate } = req.body;
   if (name !== undefined) shop.name = name;
   if (description !== undefined) shop.description = description;
   if (logo !== undefined) shop.logo = logo;
   if (banner !== undefined) shop.banner = banner;
+  if (deliveryCharges !== undefined) shop.deliveryCharges = Number(deliveryCharges) || 0;
+  if (taxRate !== undefined) shop.taxRate = Number(taxRate) || 0;
   await shop.save();
   res.json(shop);
 });

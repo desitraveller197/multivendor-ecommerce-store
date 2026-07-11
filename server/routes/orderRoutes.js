@@ -9,6 +9,9 @@ router.post('/', protect, authorize('customer', 'admin'), ctrl.createOrder);
 router.get('/myorders', protect, ctrl.getMyOrders);
 router.get('/seller', protect, authorize('seller', 'admin'), ctrl.getSellerOrders);
 router.get('/:id', protect, ctrl.getOrder);
+router.get('/:id/invoice', protect, ctrl.generateInvoice);
+router.post('/:id/refund-request', protect, ctrl.requestRefund);
+router.patch('/:id/cancel', protect, ctrl.cancelOrder);
 router.put('/:id/status', protect, authorize('seller', 'admin'), ctrl.updateOrderStatus);
 
 module.exports = router;

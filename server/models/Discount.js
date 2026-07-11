@@ -18,6 +18,7 @@ const discountSchema = new mongoose.Schema(
     active: { type: Boolean, default: true },
     startsAt: { type: Date, default: null },
     endsAt: { type: Date, default: null },
+    event: { type: String, default: '' },
   },
   {
     timestamps: true,

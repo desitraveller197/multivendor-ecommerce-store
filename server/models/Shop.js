@@ -11,6 +11,8 @@ const shopSchema = new mongoose.Schema(
     totalRevenue: { type: Number, default: 0 },
     totalOrders: { type: Number, default: 0 },
     rating: { type: Number, default: 0, min: 0, max: 5 },
+    deliveryCharges: { type: Number, default: 200, min: 0 },
+    taxRate: { type: Number, default: 5, min: 0 },
   },
   {
     timestamps: true,

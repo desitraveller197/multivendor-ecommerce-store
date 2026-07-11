@@ -21,6 +21,7 @@ function presentOrder(order) {
     order.customer && order.customer.name ? order.customer.name : undefined;
   return {
     id: order._id,
+    orderNumber: order.orderNumber || order._id,
     status: order.orderStatus,
     amount: order.totalPrice,
     date: order.createdAt,
@@ -86,9 +87,44 @@ const createOrder = asyncHandler(async (req, res) => {
     });
   }
 
-  const shippingPrice = itemsPrice >= FREE_SHIPPING_THRESHOLD ? 0 : FLAT_SHIPPING;
-  const taxPrice = Math.round(itemsPrice * TAX_RATE);
-  const totalPrice = itemsPrice + shippingPrice + taxPrice;
+  // Calculate shipping cost and tax by grouping items by shop and using shop-specific rates
+  const shopGroups = {};
+  for (const item of orderItems) {
+    const shopId = item.shop.toString();
+    if (!shopGroups[shopId]) {
+      shopGroups[shopId] = { itemsPrice: 0 };
+    }
+    shopGroups[shopId].itemsPrice += item.quantity * item.price;
+  }
+
+  let shippingPrice = 0;
+  let taxPrice = 0;
+  const Shop = require('../models/Shop');
+  for (const shopId of Object.keys(shopGroups)) {
+    const shopObj = await Shop.findById(shopId);
+    const devCharges = shopObj?.deliveryCharges ?? 200;
+
+    shippingPrice += devCharges;
+  }
+
+  const Voucher = require('../models/Voucher');
+  const voucherCode = req.body.voucherCode ? String(req.body.voucherCode).trim().toUpperCase() : '';
+  let voucherDiscount = 0;
+
+  if (voucherCode) {
+    const voucher = await Voucher.findOne({
+      code: voucherCode,
+      customer: req.user._id,
+      isUsed: false,
+    });
+    if (!voucher) {
+      res.status(400);
+      throw new Error('Invalid or already used voucher code.');
+    }
+    voucherDiscount = Math.round(itemsPrice * 0.5);
+  }
+
+  const totalPrice = Math.max(0, itemsPrice - voucherDiscount + shippingPrice);
 
   let order;
   if (orderId) {
@@ -105,6 +141,8 @@ const createOrder = asyncHandler(async (req, res) => {
       order.itemsPrice = itemsPrice;
       order.shippingPrice = shippingPrice;
       order.taxPrice = taxPrice;
+      order.voucherCode = voucherCode;
+      order.voucherDiscount = voucherDiscount;
       order.totalPrice = totalPrice;
       order.paymentReceipt = paymentReceipt || '';
       await order.save();
@@ -127,6 +165,8 @@ const createOrder = asyncHandler(async (req, res) => {
       itemsPrice,
       shippingPrice,
       taxPrice,
+      voucherCode,
+      voucherDiscount,
       totalPrice,
       orderStatus: 'Pending',
       paymentReceipt: paymentReceipt || '',
@@ -138,6 +178,39 @@ const createOrder = asyncHandler(async (req, res) => {
   if (order.paymentMethod === 'Easypaisa' && req.body.card) {
     order.cardBrand = String(req.body.card.brand || '').slice(0, 20);
     order.cardLast4 = String(req.body.card.last4 || '').replace(/\D/g, '').slice(-4);
+  }
+
+  // Create notifications for sellers & admin
+  try {
+    const Notification = require('../models/Notification');
+    const { sendNotification } = require('../socket');
+    const User = require('../models/User');
+
+    const sellerIds = [...new Set(order.orderItems.map((item) => String(item.seller)))];
+    for (const sellerId of sellerIds) {
+      const notif = await Notification.create({
+        user: sellerId,
+        type: 'order',
+        title: 'New order received',
+        message: `You have received a new order ${order.orderNumber || order._id}.`,
+        link: `/seller/orders`,
+      });
+      sendNotification(sellerId, notif.toJSON());
+    }
+
+    const adminUser = await User.findOne({ role: 'admin' });
+    if (adminUser) {
+      const notif = await Notification.create({
+        user: adminUser._id,
+        type: 'order',
+        title: 'New order received',
+        message: `A new order ${order.orderNumber || order._id} has been placed.`,
+        link: `/admin/orders`,
+      });
+      sendNotification(adminUser._id, notif.toJSON());
+    }
+  } catch (err) {
+    console.error('Failed to create order placement notifications:', err.message);
   }
 
   // COD: nothing to collect online — order is placed straight away.
@@ -296,6 +369,10 @@ const updateOrderStatus = asyncHandler(async (req, res) => {
     order.isPaid = true;
     order.paidAt = new Date();
 
+    const { checkAndAwardVoucher, markVoucherUsed } = require('../utils/voucherHelper');
+    await markVoucherUsed(order);
+    await checkAndAwardVoucher(order);
+
     const Shop = require('../models/Shop');
     for (const item of order.orderItems) {
       await Product.updateOne({ _id: item.product }, { $inc: { stock: -item.qty } });
@@ -308,8 +385,232 @@ const updateOrderStatus = asyncHandler(async (req, res) => {
     }
   }
 
+  if (oldStatus !== status && ['Shipped', 'Delivered', 'Cancelled', 'Refunded'].includes(status)) {
+    try {
+      const Notification = require('../models/Notification');
+      const { sendNotification } = require('../socket');
+
+      const notif = await Notification.create({
+        user: order.customer,
+        type: 'order',
+        title: `Order ${status.toLowerCase()}`,
+        message: `Your order ${order.orderNumber || order._id} has been ${status.toLowerCase()}.`,
+        link: `/my-orders/${order._id}`,
+      });
+      sendNotification(order.customer, notif.toJSON());
+    } catch (err) {
+      console.error('Failed to create order status change notification:', err.message);
+    }
+  }
+
   await order.save();
   res.json(presentOrder(order));
+});
+
+// POST /api/orders/:id/refund-request
+const requestRefund = asyncHandler(async (req, res) => {
+  const { reason } = req.body;
+  const RefundRequest = require('../models/RefundRequest');
+
+  if (!reason?.trim()) {
+    res.status(400);
+    throw new Error('Reason is required');
+  }
+
+  const order = await Order.findById(req.params.id);
+  if (!order) {
+    res.status(404);
+    throw new Error('Order not found');
+  }
+
+  if (order.customer.toString() !== req.user._id.toString()) {
+    res.status(403);
+    throw new Error('Not authorized to request refund for this order');
+  }
+
+  if (!order.isPaid && order.orderStatus !== 'Delivered') {
+    res.status(400);
+    throw new Error('Refund can only be requested for paid or delivered orders');
+  }
+
+  const exists = await RefundRequest.findOne({ order: order._id });
+  if (exists) {
+    res.status(400);
+    throw new Error('Refund request already submitted for this order');
+  }
+
+  const refund = await RefundRequest.create({
+    order: order._id,
+    customer: req.user._id,
+    reason: reason.trim(),
+  });
+
+  res.status(201).json(refund);
+});
+
+// PATCH /api/orders/:id/cancel
+const cancelOrder = asyncHandler(async (req, res) => {
+  const RefundRequest = require('../models/RefundRequest');
+  const Notification = require('../models/Notification');
+  const { sendNotification } = require('../socket');
+  const User = require('../models/User');
+
+  const order = await Order.findById(req.params.id);
+  if (!order) {
+    res.status(404);
+    throw new Error('Order not found');
+  }
+
+  if (order.customer.toString() !== req.user._id.toString()) {
+    res.status(403);
+    throw new Error('Not authorized to cancel this order');
+  }
+
+  const uncancellable = ['Shipped', 'Delivered', 'Cancelled', 'Refunded'];
+  if (uncancellable.includes(order.orderStatus)) {
+    res.status(400);
+    throw new Error(`Order cannot be cancelled because it is already ${order.orderStatus.toLowerCase()}`);
+  }
+
+  order.orderStatus = 'Cancelled';
+  await order.save();
+
+  if (order.isPaid) {
+    await RefundRequest.create({
+      order: order._id,
+      customer: req.user._id,
+      reason: 'Order cancelled by customer',
+      status: 'pending',
+    });
+  }
+
+  try {
+    const sellerIds = [...new Set(order.orderItems.map((item) => String(item.seller)))];
+    for (const sellerId of sellerIds) {
+      const notif = await Notification.create({
+        user: sellerId,
+        type: 'order',
+        title: 'Order Cancelled',
+        message: `Order ${order.orderNumber || order._id} was cancelled by the buyer.`,
+        link: `/seller/orders`,
+      });
+      sendNotification(sellerId, notif.toJSON());
+    }
+
+    const adminUser = await User.findOne({ role: 'admin' });
+    if (adminUser) {
+      const notif = await Notification.create({
+        user: adminUser._id,
+        type: 'order',
+        title: 'Order Cancelled',
+        message: `Order ${order.orderNumber || order._id} was cancelled by the buyer.`,
+        link: `/admin/orders`,
+      });
+      sendNotification(adminUser._id, notif.toJSON());
+    }
+  } catch (err) {
+    console.error('Failed to create order cancellation notifications:', err.message);
+  }
+
+  res.json({ message: 'Order cancelled successfully', order: presentOrder(order) });
+});
+
+// GET /api/orders/:id/invoice
+const generateInvoice = asyncHandler(async (req, res) => {
+  const PDFDocument = require('pdfkit');
+
+  const order = await Order.findById(req.params.id).populate('customer', 'name email');
+  if (!order) {
+    res.status(404);
+    throw new Error('Order not found');
+  }
+
+  const uid = req.user._id.toString();
+  const isOwner = order.customer && order.customer._id.toString() === uid;
+  if (req.user.role !== 'admin' && !isOwner) {
+    res.status(403);
+    throw new Error('Not authorized to access this invoice');
+  }
+
+  const doc = new PDFDocument({ margin: 50 });
+
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `attachment; filename=Invoice-${order.orderNumber || order._id}.pdf`);
+
+  doc.pipe(res);
+
+  // Logo & Header
+  doc.fillColor('#1d4ed8').fontSize(24).text('BAZARIX STORE', { align: 'right' });
+  doc.fillColor('#475569').fontSize(10).text('Premium Craft & Trade Marketplace', { align: 'right' });
+  doc.moveDown(1.5);
+
+  // Title
+  doc.fillColor('#0f172a').fontSize(20).text('INVOICE', { underline: true });
+  doc.moveDown(1);
+
+  // Metadata
+  doc.fontSize(10).fillColor('#334155');
+  doc.text(`Invoice Number: ${order.orderNumber || order._id}`);
+  doc.text(`Order Date: ${new Date(order.createdAt).toLocaleString()}`);
+  doc.text(`Payment Method: ${order.paymentMethod}`);
+  doc.text(`Payment Status: ${order.isPaid ? 'Paid' : 'Unpaid'}`);
+  doc.moveDown(1.5);
+
+  // Customer Section
+  doc.fillColor('#0f172a').fontSize(12).text('BILL TO:', { style: 'bold' });
+  doc.fontSize(10).fillColor('#334155');
+  doc.text(`Customer Name: ${order.customer?.name || 'Guest User'}`);
+  doc.text(`Customer Email: ${order.customer?.email || 'N/A'}`);
+
+  const addr = order.shippingAddress;
+  if (addr) {
+    doc.text(`Shipping Address: ${addr.street || ''}, ${addr.city || ''}, ${addr.province || ''} - ${addr.postalCode || ''}`);
+  }
+  doc.moveDown(2);
+
+  // Line items headers
+  doc.fillColor('#0f172a').fontSize(11);
+  doc.text('Item Description', 50, doc.y, { width: 220 });
+  doc.text('Qty', 280, doc.y, { width: 40, align: 'right' });
+  doc.text('Unit Price', 340, doc.y, { width: 100, align: 'right' });
+  doc.text('Subtotal', 460, doc.y, { width: 90, align: 'right' });
+  doc.moveDown(0.5);
+
+  const startY = doc.y;
+  doc.moveTo(50, startY).lineTo(550, startY).strokeColor('#cbd5e1').strokeWidth(1).stroke();
+  doc.moveDown(0.5);
+
+  // Print items
+  doc.fillColor('#334155').fontSize(10);
+  (order.orderItems || []).forEach((item) => {
+    const currentY = doc.y;
+    doc.text(item.name, 50, currentY, { width: 220 });
+    doc.text(String(item.qty), 280, currentY, { width: 40, align: 'right' });
+    doc.text(`PKR ${item.price.toLocaleString()}`, 340, currentY, { width: 100, align: 'right' });
+    doc.text(`PKR ${(item.price * item.qty).toLocaleString()}`, 460, currentY, { width: 90, align: 'right' });
+    doc.moveDown(0.8);
+  });
+
+  doc.moveDown(1);
+  const endY = doc.y;
+  doc.moveTo(50, endY).lineTo(550, endY).strokeColor('#cbd5e1').strokeWidth(1).stroke();
+  doc.moveDown(0.5);
+
+  // Totals
+  doc.fontSize(10).fillColor('#334155');
+  doc.text(`Items Subtotal: PKR ${order.itemsPrice.toLocaleString()}`, 350, doc.y, { align: 'right' });
+  doc.text(`Shipping Charges: PKR ${order.shippingPrice.toLocaleString()}`, 350, doc.y, { align: 'right' });
+  if (order.voucherDiscount > 0) {
+    doc.text(`Voucher Discount: -PKR ${order.voucherDiscount.toLocaleString()} (${order.voucherCode})`, 350, doc.y, { align: 'right' });
+  }
+  doc.moveDown(0.5);
+  doc.fontSize(12).fillColor('#1d4ed8').text(`Grand Total: PKR ${order.totalPrice.toLocaleString()}`, 350, doc.y, { align: 'right', style: 'bold' });
+
+  // Footer note
+  doc.moveDown(3);
+  doc.fillColor('#94a3b8').fontSize(9).text('Thank you for shopping at Bazarix Store! If you have any questions, please contact our support team.', { align: 'center' });
+
+  doc.end();
 });
 
 module.exports = {
@@ -318,5 +619,8 @@ module.exports = {
   getSellerOrders,
   getOrder,
   updateOrderStatus,
+  requestRefund,
+  cancelOrder,
+  generateInvoice,
   presentOrder,
 };

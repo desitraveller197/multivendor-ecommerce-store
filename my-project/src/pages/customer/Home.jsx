@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { useMemo } from 'react'
 import ProductCard from '../../components/ProductCard'
+import HeroSlider from '../../components/HeroSlider'
 import { useDispatch, useSelector } from 'react-redux'
 import { addToCart } from '../../store/cartSlice'
 
@@ -91,18 +92,7 @@ function Home() {
 
   return (
     <section className="mx-auto max-w-[983px] space-y-10">
-      <div className="rounded-2xl bg-gradient-to-r from-blue-700 to-indigo-600 p-8 text-white shadow-lg transition-transform duration-300 hover:-translate-y-1 hover:shadow-xl md:p-10">
-        <h1 className="text-3xl font-bold md:text-4xl">Bazarix</h1>
-        <p className="mt-2 max-w-2xl text-sm text-blue-100 md:text-base">
-          "Your digital bazaar, reimagined."
-        </p>
-        <Link
-          to="/products"
-          className="mt-5 inline-block rounded-md bg-white px-5 py-2 text-sm font-semibold text-blue-700 transition-all duration-300 hover:-translate-y-0.5 hover:bg-blue-50 hover:shadow-lg"
-        >
-          Explore Products
-        </Link>
-      </div>
+      <HeroSlider />
 
       <div>
         <h2 className="text-xl font-semibold text-slate-900 md:text-2xl">Featured Products</h2>
