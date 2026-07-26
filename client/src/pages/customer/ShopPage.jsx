@@ -161,7 +161,7 @@ function ShopPage() {
           ))}
         </div>
         
-        <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-6 grid grid-cols-2 gap-2.5 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {productsLoading ? (
             <>
               <div className="h-64 animate-pulse rounded border border-slate-200 bg-slate-100" />

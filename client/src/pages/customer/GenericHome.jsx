@@ -91,7 +91,7 @@ function GenericHome() {
             View all →
           </Link>
         </div>
-        <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-4 grid grid-cols-2 gap-2.5 sm:gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {popular.length > 0 ? (
             popular.map((product) => (
               <div key={product.id} className="flex flex-col">

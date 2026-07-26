@@ -122,7 +122,7 @@ function Home() {
             <p className="text-sm text-slate-500">No products available right now. Check back soon!</p>
           </div>
         ) : (
-          <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-4 grid grid-cols-2 gap-2.5 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {featured.map((product) => (
               <ProductCard
                 key={product.id}
