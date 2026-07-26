@@ -21,7 +21,7 @@ function ProductCard({ product, onAddToCart, linkToDetail = false }) {
     : 0;
 
   return (
-    <article className="card-hover-glow relative flex h-[350px] sm:h-[420px] w-full flex-col rounded-xl border border-slate-100 bg-white p-2.5 sm:p-4 shadow-sm">
+    <article className="card-hover-glow relative flex h-[310px] sm:h-[415px] w-full flex-col justify-between rounded-xl border border-slate-100 bg-white p-2.5 sm:p-4 shadow-sm">
       {product.discountEvent && (
         <div className="absolute left-2 top-2 z-10 rounded bg-red-600 px-1.5 py-0.5 sm:px-2.5 sm:py-1 text-[9px] sm:text-[10px] font-bold text-white uppercase tracking-wider shadow-sm">
           🔥 {product.discountEvent}
@@ -57,61 +57,66 @@ function ProductCard({ product, onAddToCart, linkToDetail = false }) {
           </svg>
         )}
       </button>
-      <img
-        src={product.image || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='500' height='320' viewBox='0 0 500 320'%3E%3Crect width='500' height='320' fill='%23f1f5f9'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='16' fill='%2394a3b8'%3E📦 Product Image%3C/text%3E%3C/svg%3E"}
-        alt={product.name || 'Product'}
-        className="h-28 sm:h-40 w-full shrink-0 rounded-md object-cover transition-transform duration-500 hover:scale-[1.03]"
-        onError={(event) => {
-          event.currentTarget.onerror = null
-          event.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='500' height='320' viewBox='0 0 500 320'%3E%3Crect width='500' height='320' fill='%23f1f5f9'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='16' fill='%2394a3b8'%3E📦 Product Image%3C/text%3E%3C/svg%3E"
-        }}
-      />
-      {linkToDetail ? (
-        <Link to={`/products/${product.id}`} className="mt-2 sm:mt-3 block min-h-[2.25rem] sm:min-h-[3.5rem]">
-          <h3 className="line-clamp-2 text-xs sm:text-lg font-semibold text-slate-900 transition-colors hover:text-blue-700">
-            {product.name}
-          </h3>
-        </Link>
-      ) : (
-        <h3 className="mt-2 sm:mt-3 line-clamp-2 min-h-[2.25rem] sm:min-h-[3.5rem] text-xs sm:text-lg font-semibold text-slate-900">{product.name}</h3>
-      )}
-      <p className="mt-0.5 truncate text-[11px] sm:text-sm text-slate-500">{product.category}</p>
-      <p className="mt-0.5 truncate text-[11px] sm:text-sm text-slate-500">{product.sellerName ?? product.seller}</p>
-      <div className="mt-1.5 sm:mt-3 flex flex-wrap items-baseline gap-1 overflow-hidden text-ellipsis">
-        <p className="text-xs sm:text-lg font-bold text-blue-700">PKR {product.discountPrice ?? product.price}</p>
-        {product.discountPrice ? (
-          <>
-            <p className="text-[10px] sm:text-xs text-slate-400 line-through">PKR {product.price}</p>
-            {discountPercent > 0 && (
-              <span className="text-[9px] sm:text-[10px] font-bold text-green-600">({discountPercent}% OFF)</span>
-            )}
-          </>
-        ) : null}
-      </div>
-      <div className="mt-1 sm:mt-2 flex items-center justify-between min-h-[1.25rem]">
-        {product.stock > 0 ? (
-          <span className="inline-flex items-center gap-1 rounded bg-green-50 px-1.5 py-0.5 text-[10px] sm:text-xs font-medium text-green-700">
-            <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
-            In Stock
-          </span>
+
+      <div>
+        <img
+          src={product.image || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='500' height='320' viewBox='0 0 500 320'%3E%3Crect width='500' height='320' fill='%23f1f5f9'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='16' fill='%2394a3b8'%3E📦 Product Image%3C/text%3E%3C/svg%3E"}
+          alt={product.name || 'Product'}
+          className="h-28 sm:h-40 w-full shrink-0 rounded-md object-cover transition-transform duration-500 hover:scale-[1.03]"
+          onError={(event) => {
+            event.currentTarget.onerror = null
+            event.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='500' height='320' viewBox='0 0 500 320'%3E%3Crect width='500' height='320' fill='%23f1f5f9'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='16' fill='%2394a3b8'%3E📦 Product Image%3C/text%3E%3C/svg%3E"
+          }}
+        />
+        {linkToDetail ? (
+          <Link to={`/products/${product.id}`} className="mt-1.5 sm:mt-3 block min-h-[2rem] sm:min-h-[3.25rem]">
+            <h3 className="line-clamp-2 text-xs sm:text-base font-semibold text-slate-900 transition-colors hover:text-blue-700">
+              {product.name}
+            </h3>
+          </Link>
         ) : (
-          <span className="inline-flex items-center gap-1 rounded bg-red-50 px-1.5 py-0.5 text-[10px] sm:text-xs font-medium text-red-700">
-            <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
-            Out of Stock
-          </span>
+          <h3 className="mt-1.5 sm:mt-3 line-clamp-2 min-h-[2rem] sm:min-h-[3.25rem] text-xs sm:text-base font-semibold text-slate-900">{product.name}</h3>
         )}
-        {(product.rating > 0 || product.numReviews > 0) ? (
-          <div className="flex items-center gap-1">
-            <StarRating value={product.rating || 0} size="sm" showValue />
-            {product.numReviews > 0 ? (
-              <span className="text-[10px] sm:text-xs text-slate-400">({product.numReviews})</span>
-            ) : null}
-          </div>
-        ) : null}
+        <p className="truncate text-[10px] sm:text-xs text-slate-500 mt-0.5">{product.sellerName ?? product.seller ?? product.category}</p>
+        
+        <div className="mt-1 sm:mt-2 flex flex-wrap items-baseline gap-1 overflow-hidden text-ellipsis">
+          <p className="text-xs sm:text-base font-bold text-blue-700">PKR {product.discountPrice ?? product.price}</p>
+          {product.discountPrice ? (
+            <>
+              <p className="text-[10px] sm:text-xs text-slate-400 line-through">PKR {product.price}</p>
+              {discountPercent > 0 && (
+                <span className="text-[9px] sm:text-[10px] font-bold text-green-600">({discountPercent}% OFF)</span>
+              )}
+            </>
+          ) : null}
+        </div>
+
+        <div className="mt-1 flex items-center justify-between min-h-[1rem]">
+          {product.stock > 0 ? (
+            <span className="inline-flex items-center gap-1 rounded bg-green-50 px-1.5 py-0.5 text-[9px] sm:text-xs font-medium text-green-700">
+              <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
+              In Stock
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1 rounded bg-red-50 px-1.5 py-0.5 text-[9px] sm:text-xs font-medium text-red-700">
+              <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
+              Out of Stock
+            </span>
+          )}
+          {(product.rating > 0 || product.numReviews > 0) ? (
+            <div className="flex items-center gap-1">
+              <StarRating value={product.rating || 0} size="sm" showValue />
+              {product.numReviews > 0 ? (
+                <span className="text-[9px] sm:text-xs text-slate-400">({product.numReviews})</span>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
       </div>
+
       <button
         disabled={product.stock <= 0}
-        className="btn-interactive mt-auto w-full rounded-md bg-blue-600 px-2 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-semibold text-white shadow-sm hover:bg-blue-700 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:transform-none"
+        className="btn-interactive mt-2 sm:mt-3 w-full rounded-md bg-blue-600 px-2 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-semibold text-white shadow-sm hover:bg-blue-700 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:transform-none"
         onClick={() => onAddToCart(product)}
       >
         {product.stock > 0 ? 'Add to Cart' : 'Out of Stock'}
