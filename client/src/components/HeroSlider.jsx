@@ -134,7 +134,7 @@ function HeroSlider() {
       onKeyDown={(e) => e.key === 'Enter' && handleBannerClick()}
       aria-label="Go to products"
     >
-      {/* Background image layer */}
+      {/* Background image layer with CSS media query switching for mobile vs desktop */}
       <div
         key={current}
         className={`absolute inset-0 transition-all duration-500 ease-in-out ${
@@ -143,9 +143,26 @@ function HeroSlider() {
             : 'opacity-100 scale-100'
         }`}
       >
-        {activeBanner ? (
+        {slide.mobileImageUrl ? (
+          <>
+            {/* Displayed ONLY on Mobile devices (< 640px) */}
+            <img
+              src={slide.mobileImageUrl}
+              alt="Mobile Event poster"
+              className="block sm:hidden absolute inset-0 h-full w-full object-cover object-center"
+              onError={(e) => { e.currentTarget.style.display = 'none' }}
+            />
+            {/* Displayed ONLY on Desktop & Tablet devices (>= 640px) */}
+            <img
+              src={slide.imageUrl || slide.mobileImageUrl}
+              alt="Desktop Event poster"
+              className="hidden sm:block absolute inset-0 h-full w-full object-cover object-center"
+              onError={(e) => { e.currentTarget.style.display = 'none' }}
+            />
+          </>
+        ) : slide.imageUrl ? (
           <img
-            src={activeBanner}
+            src={slide.imageUrl}
             alt="Event poster"
             className="absolute inset-0 h-full w-full object-cover object-center"
             onError={(e) => { e.currentTarget.style.display = 'none' }}
