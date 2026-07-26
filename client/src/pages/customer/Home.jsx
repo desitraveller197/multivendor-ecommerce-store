@@ -143,25 +143,25 @@ function Home() {
             Discover curated products by region and cultural preferences.
           </p>
         </div>
-        <div className="grid gap-5 sm:grid-cols-2">
+        <div className="grid grid-cols-2 gap-2.5 sm:gap-5 sm:grid-cols-2">
           {regionalCollections.map((region) => (
             <article
               key={region.name}
-              className="group relative overflow-hidden rounded-2xl shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
+              className="group relative overflow-hidden rounded-xl sm:rounded-2xl shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
             >
               <div
-                className="h-56 w-full bg-cover bg-center transition-transform duration-500 group-hover:scale-105"
+                className="h-40 sm:h-56 w-full bg-cover bg-center transition-transform duration-500 group-hover:scale-105"
                 style={{ backgroundImage: `url(${region.image})` }}
                 role="img"
                 aria-label={region.name}
               />
               <div className={`absolute inset-0 bg-gradient-to-t ${region.accent}`} />
-              <div className="absolute inset-0 flex flex-col justify-end p-5 text-white">
-                <h3 className="text-xl font-bold">{region.name}</h3>
-                <p className="mt-1 text-sm text-white/90">{region.description}</p>
+              <div className="absolute inset-0 flex flex-col justify-end p-3 sm:p-5 text-white">
+                <h3 className="text-sm sm:text-xl font-bold">{region.name}</h3>
+                <p className="mt-0.5 text-xs sm:text-sm text-white/90 line-clamp-2">{region.description}</p>
                 <Link
                   to={`/regional?region=${encodeURIComponent(region.name.replace(' Products', ''))}`}
-                  className="mt-4 inline-flex w-fit items-center gap-2 rounded-md bg-white/95 px-4 py-2 text-sm font-semibold text-slate-900 transition-all duration-300 hover:bg-white hover:shadow-lg"
+                  className="mt-2 sm:mt-4 inline-flex w-fit items-center gap-1 sm:gap-2 rounded-md bg-white/95 px-2.5 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm font-semibold text-slate-900 transition-all duration-300 hover:bg-white hover:shadow-lg"
                 >
                   Explore Region
                   <span aria-hidden="true">→</span>
@@ -176,22 +176,22 @@ function Home() {
         <h2 className="text-xl font-semibold text-slate-900 md:text-2xl">
           Culture-wise Shopping Categories
         </h2>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-2 gap-2.5 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {cultureCategories.map((category) => (
             <Link
               key={category.title}
               to={`/products?category=${encodeURIComponent(category.title)}`}
-              className="group rounded-2xl border border-white/60 bg-white/90 p-5 shadow-sm backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:border-blue-200 hover:shadow-lg block"
+              className="group rounded-xl sm:rounded-2xl border border-white/60 bg-white/90 p-3 sm:p-5 shadow-sm backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:border-blue-200 hover:shadow-lg block"
             >
-              <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50 text-2xl transition-transform duration-300 group-hover:scale-110">
+              <div className="inline-flex h-9 w-9 sm:h-12 sm:w-12 items-center justify-center rounded-lg sm:rounded-xl bg-blue-50 text-xl sm:text-2xl transition-transform duration-300 group-hover:scale-110">
                 <span role="img" aria-label={category.title}>
                   {category.icon}
                 </span>
               </div>
-              <h3 className="mt-4 text-lg font-semibold text-slate-900">{category.title}</h3>
-              <p className="mt-2 text-sm text-slate-600">{category.description}</p>
+              <h3 className="mt-2 sm:mt-4 text-xs sm:text-lg font-semibold text-slate-900 line-clamp-1">{category.title}</h3>
+              <p className="mt-1 sm:mt-2 text-xs sm:text-sm text-slate-600 line-clamp-2">{category.description}</p>
               <span
-                className="mt-4 inline-block text-sm font-semibold text-blue-700 transition-colors duration-300 group-hover:text-blue-900"
+                className="mt-2 sm:mt-4 inline-block text-xs sm:text-sm font-semibold text-blue-700 transition-colors duration-300 group-hover:text-blue-900"
               >
                 Browse Category →
               </span>

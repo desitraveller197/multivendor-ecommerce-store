@@ -113,7 +113,7 @@ function GenericHome() {
       {topCategories.length > 0 ? (
         <div>
           <h2 className="text-xl font-semibold text-slate-900 md:text-2xl">Shop by Category</h2>
-          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-4 grid grid-cols-2 gap-2.5 sm:gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {topCategories.map((category) => (
               <Link
                 key={category}
