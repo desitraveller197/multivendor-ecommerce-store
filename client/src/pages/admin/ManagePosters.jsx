@@ -50,14 +50,64 @@ function ManagePosters() {
     setForm((f) => ({ ...f, [field]: val }))
   }
 
+function compressImage(file, maxWidth = 1600, maxHeight = 1200, quality = 0.82) {
+  return new Promise((resolve) => {
+    if (!file || file.size <= 250 * 1024) {
+      resolve(file)
+      return
+    }
+    const reader = new FileReader()
+    reader.readAsDataURL(file)
+    reader.onload = (event) => {
+      const img = new Image()
+      img.src = event.target.result
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        let width = img.width
+        let height = img.height
+
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width)
+          width = maxWidth
+        }
+        if (height > maxHeight) {
+          width = Math.round((width * maxHeight) / height)
+          height = maxHeight
+        }
+
+        canvas.width = width
+        canvas.height = height
+        const ctx = canvas.getContext('2d')
+        ctx.drawImage(img, 0, 0, width, height)
+
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) { resolve(file); return }
+            const compressedFile = new File([blob], file.name, {
+              type: 'image/jpeg',
+              lastModified: Date.now(),
+            })
+            resolve(compressedFile)
+          },
+          'image/jpeg',
+          quality
+        )
+      }
+      img.onerror = () => resolve(file)
+    }
+    reader.onerror = () => resolve(file)
+  })
+}
+
   const handleImageUpload = (field, setUploadingState, fileRef) => async (e) => {
-    const file = e.target.files?.[0]
-    if (!file) return
+    const rawFile = e.target.files?.[0]
+    if (!rawFile) return
     setUploadingState(true)
     setError('')
     try {
+      const fileToUpload = await compressImage(rawFile)
       const fd = new FormData()
-      fd.append('image', file)
+      fd.append('image', fileToUpload)
       const res = await axiosInstance.post('/upload/image', fd, {
         headers: { 'Content-Type': 'multipart/form-data' },
       })
