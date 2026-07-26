@@ -19,6 +19,19 @@ function HeroSlider() {
   const timerRef = useRef(null)
   const navigate = useNavigate()
 
+  const [isMobile, setIsMobile] = useState(() => {
+    if (typeof window === 'undefined') return false
+    return window.innerWidth < 768 || /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+  })
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768 || /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent))
+    }
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
   useEffect(() => {
     axiosInstance
       .get('/posters')
@@ -30,7 +43,24 @@ function HeroSlider() {
       .finally(() => setLoaded(true))
   }, [])
 
-  const slides = posters.length > 0 ? posters : FALLBACK_POSTERS
+  // Filter slides strictly by device mode:
+  // On Mobile: ONLY use posters that have a dedicated mobileImageUrl
+  // On Desktop: ONLY use posters that have an imageUrl
+  const slides = useMemo(() => {
+    const raw = posters.length > 0 ? posters : FALLBACK_POSTERS
+    if (isMobile) {
+      const mobilePosters = raw.filter((p) => p.mobileImageUrl && p.mobileImageUrl.trim() !== '')
+      return mobilePosters.length > 0 ? mobilePosters : raw
+    } else {
+      const desktopPosters = raw.filter((p) => p.imageUrl && p.imageUrl.trim() !== '')
+      return desktopPosters.length > 0 ? desktopPosters : raw
+    }
+  }, [posters, isMobile])
+
+  // Reset index if slides change
+  useEffect(() => {
+    setCurrent(0)
+  }, [slides.length, isMobile])
 
   const goTo = useCallback(
     (idx, dir = 1) => {
@@ -63,22 +93,12 @@ function HeroSlider() {
     return () => clearInterval(timerRef.current)
   }, [next, slides.length, current])
 
-  const [isMobile, setIsMobile] = useState(
-    typeof window !== 'undefined' ? window.innerWidth < 768 : false
-  )
-
-  useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 768)
-    }
-    window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
-  }, [])
-
-  const slide = slides[current]
+  const slide = slides[current % slides.length] || slides[0] || {}
   const destination = slide.linkUrl || '/products'
-  const activeBanner = (isMobile && slide.mobileImageUrl)
-    ? slide.mobileImageUrl
+
+  // Determine current image strictly based on device
+  const displayImage = isMobile
+    ? (slide.mobileImageUrl || slide.imageUrl || '')
     : (slide.imageUrl || slide.mobileImageUrl || '')
 
   const handleBannerClick = () => {
@@ -99,20 +119,15 @@ function HeroSlider() {
   const handleTouchEnd = () => {
     if (!touchStartX.current || !touchEndX.current) return
     const diff = touchStartX.current - touchEndX.current
-    // Swipe distance threshold
     if (diff > 40) {
-      // Swiped left -> next
       next()
     } else if (diff < -40) {
-      // Swiped right -> prev
       goTo((current - 1 + slides.length) % slides.length, -1)
     }
     touchStartX.current = 0
     touchEndX.current = 0
   }
 
-  // While the posters request is in flight, show a neutral placeholder instead
-  // of the fallback image so no glitchy default banner flashes on first load.
   if (!loaded) {
     return (
       <div
@@ -134,36 +149,19 @@ function HeroSlider() {
       onKeyDown={(e) => e.key === 'Enter' && handleBannerClick()}
       aria-label="Go to products"
     >
-      {/* Background image layer with CSS media query switching for mobile vs desktop */}
+      {/* Background image layer */}
       <div
-        key={current}
+        key={`${current}-${isMobile ? 'mob' : 'desk'}`}
         className={`absolute inset-0 transition-all duration-500 ease-in-out ${
           isTransitioning
             ? direction > 0 ? 'opacity-0 scale-105' : 'opacity-0 scale-95'
             : 'opacity-100 scale-100'
         }`}
       >
-        {slide.mobileImageUrl ? (
-          <>
-            {/* Displayed ONLY on Mobile devices (< 640px) */}
-            <img
-              src={slide.mobileImageUrl}
-              alt="Mobile Event poster"
-              className="block sm:hidden absolute inset-0 h-full w-full object-cover object-center"
-              onError={(e) => { e.currentTarget.style.display = 'none' }}
-            />
-            {/* Displayed ONLY on Desktop & Tablet devices (>= 640px) */}
-            <img
-              src={slide.imageUrl || slide.mobileImageUrl}
-              alt="Desktop Event poster"
-              className="hidden sm:block absolute inset-0 h-full w-full object-cover object-center"
-              onError={(e) => { e.currentTarget.style.display = 'none' }}
-            />
-          </>
-        ) : slide.imageUrl ? (
+        {displayImage ? (
           <img
-            src={slide.imageUrl}
-            alt="Event poster"
+            src={displayImage}
+            alt={isMobile ? 'Mobile Event Poster' : 'Desktop Event Poster'}
             className="absolute inset-0 h-full w-full object-cover object-center"
             onError={(e) => { e.currentTarget.style.display = 'none' }}
           />
