@@ -99,11 +99,8 @@ function Home() {
   ]
 
   return (
-    <section className="space-y-10">
-      {/* Hero breaks out to full-bleed width */}
-      <div className="-mx-4 md:-mx-6">
-        <HeroSlider />
-      </div>
+    <section className="mx-auto max-w-[983px] space-y-10">
+      <HeroSlider />
 
       <RevealOnScroll>
         <h2 className="text-xl font-semibold text-slate-900 md:text-2xl">Featured Products</h2>
