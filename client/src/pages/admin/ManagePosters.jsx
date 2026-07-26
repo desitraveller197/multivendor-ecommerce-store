@@ -123,14 +123,28 @@ function compressImage(file, maxWidth = 1600, maxHeight = 1200, quality = 0.82) 
   const handleCreate = async (e) => {
     e.preventDefault()
     setError('')
-    if (!form.imageUrl.trim()) { setError('Please upload a desktop poster image.'); return }
+    const desktopImg = form.imageUrl.trim()
+    const mobileImg = form.mobileImageUrl.trim()
+
+    if (!desktopImg && !mobileImg) {
+      setError('Please upload at least one poster image (Desktop or Mobile).')
+      return
+    }
+
+    const payload = {
+      ...form,
+      imageUrl: desktopImg || mobileImg,
+      mobileImageUrl: mobileImg,
+      order: Number(form.order || 0),
+    }
+
     setSaving(true)
     try {
       if (USE_MOCK) {
         await delay(400)
-        setPosters((p) => [...p, { id: Date.now().toString(), ...form, order: Number(form.order) }])
+        setPosters((p) => [...p, { id: Date.now().toString(), ...payload }])
       } else {
-        const res = await axiosInstance.post('/posters', { ...form, order: Number(form.order) })
+        const res = await axiosInstance.post('/posters', payload)
         setPosters((p) => [...p, res.data])
       }
       setForm(EMPTY_FORM)
