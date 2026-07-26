@@ -63,8 +63,23 @@ function HeroSlider() {
     return () => clearInterval(timerRef.current)
   }, [next, slides.length, current])
 
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== 'undefined' ? window.innerWidth < 768 : false
+  )
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768)
+    }
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
   const slide = slides[current]
   const destination = slide.linkUrl || '/products'
+  const activeBanner = (isMobile && slide.mobileImageUrl)
+    ? slide.mobileImageUrl
+    : (slide.imageUrl || slide.mobileImageUrl || '')
 
   const handleBannerClick = () => {
     navigate(destination)
@@ -119,7 +134,7 @@ function HeroSlider() {
       onKeyDown={(e) => e.key === 'Enter' && handleBannerClick()}
       aria-label="Go to products"
     >
-      {/* Background image layer with mobile picture source fallback */}
+      {/* Background image layer */}
       <div
         key={current}
         className={`absolute inset-0 transition-all duration-500 ease-in-out ${
@@ -128,18 +143,13 @@ function HeroSlider() {
             : 'opacity-100 scale-100'
         }`}
       >
-        {slide.imageUrl ? (
-          <picture className="absolute inset-0 h-full w-full">
-            {slide.mobileImageUrl && (
-              <source media="(max-width: 767px)" srcSet={slide.mobileImageUrl} />
-            )}
-            <img
-              src={slide.imageUrl}
-              alt="Event poster"
-              className="absolute inset-0 h-full w-full object-cover object-center"
-              onError={(e) => { e.currentTarget.style.display = 'none' }}
-            />
-          </picture>
+        {activeBanner ? (
+          <img
+            src={activeBanner}
+            alt="Event poster"
+            className="absolute inset-0 h-full w-full object-cover object-center"
+            onError={(e) => { e.currentTarget.style.display = 'none' }}
+          />
         ) : (
           <div className="absolute inset-0 bg-gradient-to-br from-blue-800 via-indigo-700 to-blue-950" />
         )}
