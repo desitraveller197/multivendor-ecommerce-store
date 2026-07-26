@@ -6,6 +6,7 @@ const FALLBACK_POSTERS = [
   {
     id: 'fb1',
     imageUrl: '/images/hero_default.png',
+    mobileImageUrl: '/images/hero_default.png',
     linkUrl: '/products',
   },
 ]
@@ -16,20 +17,19 @@ function HeroSlider() {
   const [current, setCurrent] = useState(0)
   const [direction, setDirection] = useState(1)
   const [isTransitioning, setIsTransitioning] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
   const timerRef = useRef(null)
   const navigate = useNavigate()
 
-  const [isMobile, setIsMobile] = useState(() => {
-    if (typeof window === 'undefined') return false
-    return window.innerWidth < 768 || /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
-  })
-
   useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 768 || /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent))
+    const checkMobile = () => {
+      const mobileWidth = window.innerWidth < 768
+      const mobileUA = typeof navigator !== 'undefined' && /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+      setIsMobile(mobileWidth || mobileUA)
     }
-    window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
   }, [])
 
   useEffect(() => {
@@ -43,28 +43,24 @@ function HeroSlider() {
       .finally(() => setLoaded(true))
   }, [])
 
+  const rawPosters = posters.length > 0 ? posters : FALLBACK_POSTERS
+
   // Filter slides strictly by device mode:
   // On Mobile: ONLY use posters that have a dedicated mobileImageUrl
   // On Desktop: ONLY use posters that have an imageUrl
-  const slides = useMemo(() => {
-    const raw = posters.length > 0 ? posters : FALLBACK_POSTERS
-    if (isMobile) {
-      const mobilePosters = raw.filter((p) => p.mobileImageUrl && p.mobileImageUrl.trim() !== '')
-      return mobilePosters.length > 0 ? mobilePosters : raw
-    } else {
-      const desktopPosters = raw.filter((p) => p.imageUrl && p.imageUrl.trim() !== '')
-      return desktopPosters.length > 0 ? desktopPosters : raw
-    }
-  }, [posters, isMobile])
+  const slides = isMobile
+    ? rawPosters.filter((p) => p.mobileImageUrl && p.mobileImageUrl.trim() !== '')
+    : rawPosters.filter((p) => p.imageUrl && p.imageUrl.trim() !== '')
 
-  // Reset index if slides change
-  useEffect(() => {
-    setCurrent(0)
-  }, [slides.length, isMobile])
+  const activeSlides = slides.length > 0 ? slides : rawPosters
+  const totalSlides = activeSlides.length
+
+  const safeIndex = totalSlides > 0 ? ((current % totalSlides) + totalSlides) % totalSlides : 0
+  const slide = activeSlides[safeIndex] || activeSlides[0] || FALLBACK_POSTERS[0]
 
   const goTo = useCallback(
     (idx, dir = 1) => {
-      if (isTransitioning || idx === current) return
+      if (isTransitioning || totalSlides <= 1) return
       setDirection(dir)
       setIsTransitioning(true)
       setTimeout(() => {
@@ -72,14 +68,18 @@ function HeroSlider() {
         setIsTransitioning(false)
       }, 400)
     },
-    [isTransitioning, current]
+    [isTransitioning, totalSlides]
   )
 
   const prev = (e) => {
     e.stopPropagation()
-    goTo((current - 1 + slides.length) % slides.length, -1)
+    goTo((safeIndex - 1 + totalSlides) % totalSlides, -1)
   }
-  const next = useCallback(() => goTo((current + 1) % slides.length, 1), [current, goTo, slides.length])
+
+  const next = useCallback(() => {
+    goTo((safeIndex + 1) % totalSlides, 1)
+  }, [safeIndex, totalSlides, goTo])
+
   const nextWithStop = (e) => {
     e.stopPropagation()
     next()
@@ -87,16 +87,13 @@ function HeroSlider() {
 
   // Auto-advance timer
   useEffect(() => {
-    if (slides.length <= 1) return
+    if (totalSlides <= 1) return
     if (timerRef.current) clearInterval(timerRef.current)
     timerRef.current = setInterval(next, 5500)
     return () => clearInterval(timerRef.current)
-  }, [next, slides.length, current])
+  }, [next, totalSlides])
 
-  const slide = slides[current % slides.length] || slides[0] || {}
   const destination = slide.linkUrl || '/products'
-
-  // Determine current image strictly based on device
   const displayImage = isMobile
     ? (slide.mobileImageUrl || slide.imageUrl || '')
     : (slide.imageUrl || slide.mobileImageUrl || '')
@@ -122,7 +119,7 @@ function HeroSlider() {
     if (diff > 40) {
       next()
     } else if (diff < -40) {
-      goTo((current - 1 + slides.length) % slides.length, -1)
+      goTo((safeIndex - 1 + totalSlides) % totalSlides, -1)
     }
     touchStartX.current = 0
     touchEndX.current = 0
@@ -151,7 +148,7 @@ function HeroSlider() {
     >
       {/* Background image layer */}
       <div
-        key={`${current}-${isMobile ? 'mob' : 'desk'}`}
+        key={`${safeIndex}-${isMobile ? 'mob' : 'desk'}`}
         className={`absolute inset-0 transition-all duration-500 ease-in-out ${
           isTransitioning
             ? direction > 0 ? 'opacity-0 scale-105' : 'opacity-0 scale-95'
@@ -171,7 +168,7 @@ function HeroSlider() {
       </div>
 
       {/* Arrows */}
-      {slides.length > 1 && (
+      {totalSlides > 1 && (
         <>
           <button
             type="button"
@@ -197,22 +194,21 @@ function HeroSlider() {
       )}
 
       {/* Dots */}
-      {slides.length > 1 && (
+      {totalSlides > 1 && (
         <div className="absolute bottom-3 sm:bottom-4 right-4 sm:right-5 flex gap-1.5 z-10">
-          {slides.map((_, i) => (
+          {activeSlides.map((_, i) => (
             <button
               key={i}
               type="button"
-              onClick={(e) => { e.stopPropagation(); goTo(i, i > current ? 1 : -1) }}
+              onClick={(e) => { e.stopPropagation(); goTo(i, i > safeIndex ? 1 : -1) }}
               aria-label={`Go to slide ${i + 1}`}
               className={`h-1.5 rounded-full transition-all duration-300 ${
-                i === current ? 'w-6 bg-white shadow' : 'w-1.5 bg-white/40 hover:bg-white/70'
+                i === safeIndex ? 'w-6 bg-white shadow' : 'w-1.5 bg-white/40 hover:bg-white/70'
               }`}
             />
           ))}
         </div>
       )}
-
     </div>
   )
 }
