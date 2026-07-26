@@ -2,6 +2,8 @@
  * Test setup: connect to a test MongoDB if MONGO_URI_TEST (or MONGO_URI) is reachable.
  * If no database is reachable, tests that need one are skipped via global.__DB_READY__.
  */
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 const mongoose = require('mongoose');
 
 module.exports = async function connectTestDB() {
@@ -11,7 +13,8 @@ module.exports = async function connectTestDB() {
     mongoose.set('strictQuery', true);
     await mongoose.connect(uri, { serverSelectionTimeoutMS: 3000 });
     return true;
-  } catch {
+  } catch (err) {
+    console.error('Test DB connection error:', err.message);
     return false;
   }
 };

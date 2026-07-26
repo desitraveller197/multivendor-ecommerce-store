@@ -36,5 +36,25 @@ const upload = multer({
   },
 });
 
+const ALLOWED_BULK = [
+  'text/csv',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/vnd.ms-excel',
+];
+
+const uploadBulk = multer({
+  storage,
+  limits: { fileSize: (Number(process.env.MAX_FILE_SIZE_MB) || 5) * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    const isAllowedExt = ['.csv', '.xlsx', '.xls'].includes(ext);
+    if (ALLOWED_BULK.includes(file.mimetype) || isAllowedExt) {
+      return cb(null, true);
+    }
+    cb(new Error('Only Excel (.xlsx) and CSV (.csv) files are allowed'));
+  },
+});
+
 module.exports = upload;
+module.exports.uploadBulk = uploadBulk;
 

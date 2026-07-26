@@ -14,12 +14,12 @@ const listPosters = asyncHandler(async (req, res) => {
 
 // POST /api/posters  (admin)
 const createPoster = asyncHandler(async (req, res) => {
-  const { title, subtitle, imageUrl, linkUrl, active, order } = req.body;
+  const { title, subtitle, imageUrl, mobileImageUrl, linkUrl, active, order } = req.body;
   if (!imageUrl) {
     res.status(400);
     throw new Error('imageUrl is required');
   }
-  const poster = await Poster.create({ title, subtitle, imageUrl, linkUrl, active, order });
+  const poster = await Poster.create({ title, subtitle, imageUrl, mobileImageUrl, linkUrl, active, order });
   res.status(201).json(poster);
 });
 
@@ -30,7 +30,7 @@ const updatePoster = asyncHandler(async (req, res) => {
     res.status(404);
     throw new Error('Poster not found');
   }
-  const fields = ['title', 'subtitle', 'imageUrl', 'linkUrl', 'active', 'order'];
+  const fields = ['title', 'subtitle', 'imageUrl', 'mobileImageUrl', 'linkUrl', 'active', 'order'];
   fields.forEach((f) => {
     if (req.body[f] !== undefined) poster[f] = req.body[f];
   });

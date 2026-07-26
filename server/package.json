@@ -41,7 +41,8 @@
     "redis": "^6.1.0",
     "sanitize-html": "^2.17.5",
     "socket.io": "^4.8.3",
-    "stripe": "^22.3.0"
+    "stripe": "^22.3.0",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "autocannon": "^8.0.0",
@@ -50,6 +51,8 @@
     "supertest": "^7.0.0"
   },
   "jest": {
-    "testMatch": ["**/tests/**/*.test.js"]
+    "testMatch": [
+      "**/tests/**/*.test.js"
+    ]
   }
 }

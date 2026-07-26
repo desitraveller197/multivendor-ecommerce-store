@@ -6,6 +6,7 @@ const { protect } = require('../middleware/authMiddleware');
 const { authorize, requireApprovedSeller } = require('../middleware/roleMiddleware');
 const User = require('../models/User');
 const ctrl = require('../controllers/productController');
+const { uploadBulk } = require('../middleware/upload');
 
 const router = express.Router();
 
@@ -28,6 +29,15 @@ async function optionalAuth(req, res, next) {
 }
 
 router.get('/', optionalAuth, ctrl.listProducts);
+router.get('/bulk/template', protect, authorize('seller', 'admin'), ctrl.getBulkTemplate);
+router.post(
+  '/bulk',
+  protect,
+  authorize('seller', 'admin'),
+  requireApprovedSeller,
+  uploadBulk.single('file'),
+  ctrl.bulkCreateProducts
+);
 router.get('/:id', ctrl.getProduct);
 router.post(
   '/',

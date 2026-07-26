@@ -5,6 +5,7 @@ const posterSchema = new mongoose.Schema(
     title: { type: String, trim: true, default: '', maxlength: 150 },
     subtitle: { type: String, trim: true, default: '', maxlength: 300 },
     imageUrl: { type: String, required: true },
+    mobileImageUrl: { type: String, default: '' },
     linkUrl: { type: String, default: '' },
     active: { type: Boolean, default: true },
     order: { type: Number, default: 0 },
