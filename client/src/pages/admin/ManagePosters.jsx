@@ -155,6 +155,30 @@ function compressImage(file, maxWidth = 1600, maxHeight = 1200, quality = 0.82) 
     }
   }
 
+  const handleInlineMobileUpload = (poster) => async (e) => {
+    const rawFile = e.target.files?.[0]
+    if (!rawFile) return
+    setError('')
+    try {
+      const fileToUpload = await compressImage(rawFile)
+      const fd = new FormData()
+      fd.append('image', fileToUpload)
+      const res = await axiosInstance.post('/upload/image', fd, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      const mobileImageUrl = res.data.imageUrl
+      const posterId = poster.id || poster._id
+      if (!USE_MOCK) {
+        await axiosInstance.patch(`/posters/${posterId}`, { mobileImageUrl })
+      }
+      setPosters((p) =>
+        p.map((x) => ((x.id || x._id) === posterId ? { ...x, mobileImageUrl } : x))
+      )
+    } catch {
+      setError('Failed to update mobile poster image.')
+    }
+  }
+
   const handleDelete = async (poster) => {
     setDeleting(true)
     setError('')
@@ -296,9 +320,15 @@ function compressImage(file, maxWidth = 1600, maxHeight = 1200, quality = 0.82) 
                         {poster.mobileImageUrl ? (
                           <img src={poster.mobileImageUrl} alt="Mobile poster" className="h-14 w-12 rounded object-cover ring-1 ring-slate-200" />
                         ) : (
-                          <div className="flex h-14 w-12 items-center justify-center rounded bg-amber-50/60 text-xs text-amber-700 font-medium text-center px-1">
-                            Same as desktop
-                          </div>
+                          <label className="flex flex-col h-14 w-16 items-center justify-center rounded border border-dashed border-amber-300 bg-amber-50/60 text-[10px] text-amber-800 font-semibold cursor-pointer hover:bg-amber-100/70 transition p-1 text-center">
+                            <span>+ Add Mobile Image</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={handleInlineMobileUpload(poster)}
+                            />
+                          </label>
                         )}
                       </div>
                     </div>
@@ -313,9 +343,20 @@ function compressImage(file, maxWidth = 1600, maxHeight = 1200, quality = 0.82) 
                             ✓ Mobile optimized banner active
                           </span>
                         ) : (
-                          <span className="inline-flex items-center text-[11px] font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
-                            Uses desktop banner on mobile
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className="inline-flex items-center text-[11px] font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
+                              Uses desktop banner on mobile
+                            </span>
+                            <label className="text-[11px] font-semibold text-amber-700 underline cursor-pointer hover:text-amber-800">
+                              Upload mobile banner
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={handleInlineMobileUpload(poster)}
+                              />
+                            </label>
+                          </div>
                         )}
                       </div>
                     </div>
