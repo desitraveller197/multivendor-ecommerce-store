@@ -1,6 +1,6 @@
 const { spawn } = require('child_process');
 
-const key = "sk_test_51TpOMyGfdSCWL02OmNJrblsDdBUwKXCilwPm3zpye0LO7raQ0vCnLRj1KijFXLuJYuE2YvePXFc2xXeZhhNinFTF00HNPfdP7K";
+const key = process.env.STRIPE_SECRET_KEY || "sk_test_placeholder";
 
 const child = spawn('npx', ['vercel', 'env', 'add', 'STRIPE_SECRET_KEY', 'production', '--force'], {
   stdio: ['pipe', 'inherit', 'inherit'],
