@@ -284,6 +284,7 @@ function ProductListing() {
   const [selectedSeasons, setSelectedSeasons] = useState([])
   const [sortBy, setSortBy] = useState('default')
   const [page, setPage] = useState(1)
+  const [showMobileFilters, setShowMobileFilters] = useState(false)
 
   useEffect(() => {
     setMinPrice(extent.min)
@@ -428,8 +429,26 @@ function ProductListing() {
       description="Browse the full catalog. Use the filters on the left to narrow products by category, size, color family, season, and price."
       actions={sortSelect}
     >
+      <div className="lg:hidden mb-4">
+        <button
+          type="button"
+          onClick={() => setShowMobileFilters((prev) => !prev)}
+          className="flex w-full items-center justify-between rounded-xl border border-slate-200 bg-white p-3.5 text-sm font-semibold text-slate-800 shadow-sm"
+        >
+          <span className="flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+            </svg>
+            Search & Product Filters
+          </span>
+          <span className="rounded bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-700">
+            {showMobileFilters ? 'Hide Filters ▲' : 'Show Filters ▼'}
+          </span>
+        </button>
+      </div>
+
       <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
-        <RevealOnScroll className="space-y-4 self-start" as="aside">
+        <RevealOnScroll className={`space-y-4 self-start ${showMobileFilters ? 'block' : 'hidden lg:block'}`} as="aside">
           <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm md:p-5">
             <div>
               <label htmlFor="product-search" className="text-xs font-semibold uppercase tracking-wide text-slate-500">

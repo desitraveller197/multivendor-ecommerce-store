@@ -227,16 +227,37 @@ function Navbar() {
           )}
         </nav>
 
-        <button
-          ref={mobileMenuButtonRef}
-          type="button"
-          className="shrink-0 rounded-md px-3 py-2 text-lg font-semibold text-slate-700 transition-all duration-300 hover:scale-110 hover:bg-slate-100 xl:hidden"
-          aria-label={isMenuOpen ? 'Close menu' : 'Open menu'}
-          aria-expanded={isMenuOpen}
-          onClick={() => setIsMenuOpen((prev) => !prev)}
-        >
-          <span className="inline-block transition-transform duration-300">{isMenuOpen ? '✕' : '☰'}</span>
-        </button>
+        <div className="flex items-center gap-2 xl:hidden">
+          {isAuthenticated && role === 'customer' && (
+            <Link
+              to="/cart"
+              className="relative rounded-md p-2 text-slate-700 hover:bg-slate-100 transition-colors"
+              aria-label="View Cart"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+              {cartCount > 0 && (
+                <span className="absolute right-0.5 top-0.5 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow-sm">
+                  {cartCount}
+                </span>
+              )}
+            </Link>
+          )}
+
+          {isAuthenticated && <NotificationDropdown notifications={notifications} />}
+
+          <button
+            ref={mobileMenuButtonRef}
+            type="button"
+            className="shrink-0 rounded-md p-2 text-xl font-semibold text-slate-700 transition-all duration-300 hover:bg-slate-100"
+            aria-label={isMenuOpen ? 'Close menu' : 'Open menu'}
+            aria-expanded={isMenuOpen}
+            onClick={() => setIsMenuOpen((prev) => !prev)}
+          >
+            <span className="inline-block transition-transform duration-300">{isMenuOpen ? '✕' : '☰'}</span>
+          </button>
+        </div>
       </div>
 
       {isMenuOpen ? (

@@ -171,11 +171,11 @@ function Footer() {
           <p className="mt-1 text-sm text-slate-600">
             Secure checkout with the payment options available on Bazarix
           </p>
-          <div className="mt-4 flex flex-wrap justify-center gap-3">
+          <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-2xl mx-auto">
             {PAYMENT_METHODS.map((method) => (
               <div
                 key={method.name}
-                className="card-hover-glow flex w-[140px] sm:w-[160px] flex-col items-center rounded-xl border border-slate-100 bg-white p-3 shadow-sm"
+                className="card-hover-glow flex flex-col items-center rounded-xl border border-slate-100 bg-white p-3 shadow-sm"
                 title={method.description}
               >
                 <img
@@ -190,8 +190,8 @@ function Footer() {
           </div>
         </RevealOnScroll>
 
-        <RevealOnScroll className="grid gap-8 border-t border-slate-200 pt-8 md:grid-cols-4">
-          <div className="md:col-span-1">
+        <RevealOnScroll className="grid gap-8 border-t border-slate-200 pt-8 grid-cols-1 sm:grid-cols-2 md:grid-cols-4">
+          <div className="sm:col-span-2 md:col-span-1">
             <p className="text-lg font-bold text-blue-700">Bazarix</p>
             <p className="mt-2 text-sm text-slate-600">
               Your digital bazaar for authentic Pakistani cultural products from trusted regional sellers.

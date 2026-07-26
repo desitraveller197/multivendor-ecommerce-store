@@ -135,12 +135,12 @@ function ProductDetail() {
           <img
             src={images[activeImage]}
             alt={product.name}
-            className="h-80 w-full rounded-md object-cover"
+            className="h-64 sm:h-80 md:h-96 w-full rounded-md object-cover"
           />
-          <div className="mt-3 flex gap-2">
+          <div className="mt-3 flex flex-wrap gap-2 overflow-x-auto">
             {images.map((image, index) => (
               <button key={image + index} onClick={() => setActiveImage(index)}>
-                <img src={image} alt="thumbnail" className="h-16 w-16 rounded object-cover" />
+                <img src={image} alt="thumbnail" className="h-14 w-14 sm:h-16 sm:w-16 rounded object-cover ring-1 ring-slate-200" />
               </button>
             ))}
           </div>
@@ -194,9 +194,9 @@ function ProductDetail() {
             )}
           </div>
 
-          <div className="mt-6 flex flex-wrap items-center gap-3">
+          <div className="mt-6 flex flex-col sm:flex-row sm:items-center gap-3">
             <button
-              className="rounded-md bg-blue-600 px-5 py-2 text-sm font-semibold text-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:bg-blue-700 hover:shadow-md"
+              className="w-full sm:w-auto rounded-md bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:bg-blue-700 hover:shadow-md"
               onClick={() => dispatch(addToCart({ ...product, selectedSize, quantity }))}
             >
               Add to Cart
@@ -209,7 +209,7 @@ function ProductDetail() {
               label="Message Seller"
             />
             <button
-              className={`rounded-md border px-5 py-2 text-sm font-semibold shadow-sm transition ${
+              className={`w-full sm:w-auto rounded-md border px-5 py-2.5 text-sm font-semibold shadow-sm transition ${
                 isWishlisted
                   ? 'border-red-200 bg-red-50 text-red-700 hover:bg-red-100'
                   : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'

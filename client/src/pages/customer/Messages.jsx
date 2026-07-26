@@ -277,7 +277,7 @@ function Messages() {
       ) : null}
 
       <div className="grid gap-4 lg:grid-cols-[320px_1fr]">
-        <aside className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <aside className={`rounded-xl border border-slate-200 bg-white p-4 shadow-sm ${activeConversation ? 'hidden lg:block' : 'block'}`}>
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-semibold text-slate-900">Conversations</h2>
             {onlineContactCount > 0 ? (
@@ -353,10 +353,17 @@ function Messages() {
           ) : null}
         </aside>
 
-        <section className="flex min-h-[560px] flex-col rounded-xl border border-slate-200 bg-white shadow-sm">
+        <section className={`min-h-[560px] flex-col rounded-xl border border-slate-200 bg-white shadow-sm ${activeConversation ? 'flex' : 'hidden lg:flex'}`}>
           {activeConversation ? (
             <>
               <div className="border-b border-slate-100 px-4 py-3">
+                <button
+                  type="button"
+                  onClick={() => dispatch(setActiveConversation(null))}
+                  className="mb-2 inline-flex items-center gap-1 text-xs font-semibold text-blue-700 hover:text-blue-900 lg:hidden"
+                >
+                  ← Back to Conversations
+                </button>
                 <p className="text-xs font-semibold uppercase text-blue-700">
                   {typeLabel(activeConversation.type)}
                 </p>

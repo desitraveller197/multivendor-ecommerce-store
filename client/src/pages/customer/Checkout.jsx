@@ -313,7 +313,7 @@ function Checkout() {
                 <label className="text-sm font-medium text-slate-700">Street</label>
                 <input className={inputClass} placeholder="123 Main Street" value={street} onChange={(e) => setStreet(e.target.value)} />
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1">
                   <label className="text-sm font-medium text-slate-700">City</label>
                   <input className={inputClass} placeholder="Lahore" value={city} onChange={(e) => setCity(e.target.value)} />

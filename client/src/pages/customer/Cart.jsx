@@ -32,42 +32,44 @@ function Cart() {
           cartItems.map((item) => (
             <div
               key={getItemId(item)}
-              className="flex items-center justify-between rounded-lg border border-slate-200 p-3 transition-all duration-200 hover:border-slate-300 hover:shadow-sm"
+              className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-lg border border-slate-200 p-3.5 transition-all duration-200 hover:border-slate-300 hover:shadow-sm"
             >
               <div className="flex items-center gap-3">
                 {item.image && (
                   <img
                     src={item.image}
                     alt={item.name}
-                    className="h-14 w-14 rounded-md object-cover"
+                    className="h-14 w-14 rounded-md object-cover shrink-0"
                     onError={(e) => {
                       e.currentTarget.style.display = 'none'
                     }}
                   />
                 )}
                 <div>
-                  <p className="font-semibold text-slate-900">{item.name}</p>
+                  <p className="font-semibold text-slate-900 line-clamp-2">{item.name}</p>
                   <p className="text-sm text-blue-700 font-bold">
                     PKR {item.discountPrice ?? item.price} × {item.quantity}
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <button
-                  className="rounded border border-slate-300 px-2 py-1 text-sm font-bold text-slate-700 transition-colors hover:bg-slate-50"
-                  onClick={() => dispatch(decrementQuantity(getItemId(item)))}
-                >
-                  −
-                </button>
-                <span className="min-w-[1.5rem] text-center font-semibold text-slate-900">
-                  {item.quantity}
-                </span>
-                <button
-                  className="rounded border border-slate-300 px-2 py-1 text-sm font-bold text-slate-700 transition-colors hover:bg-slate-50"
-                  onClick={() => dispatch(addToCart(item))}
-                >
-                  +
-                </button>
+              <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-100">
+                <div className="flex items-center gap-2">
+                  <button
+                    className="rounded border border-slate-300 px-2.5 py-1 text-sm font-bold text-slate-700 transition-colors hover:bg-slate-50"
+                    onClick={() => dispatch(decrementQuantity(getItemId(item)))}
+                  >
+                    −
+                  </button>
+                  <span className="min-w-[1.5rem] text-center font-semibold text-slate-900">
+                    {item.quantity}
+                  </span>
+                  <button
+                    className="rounded border border-slate-300 px-2.5 py-1 text-sm font-bold text-slate-700 transition-colors hover:bg-slate-50"
+                    onClick={() => dispatch(addToCart(item))}
+                  >
+                    +
+                  </button>
+                </div>
                 <button
                   className="rounded-md bg-red-500 px-3 py-1.5 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-red-600 hover:shadow-sm"
                   onClick={() => dispatch(removeFromCart(getItemId(item)))}
@@ -82,13 +84,13 @@ function Cart() {
 
       {cartItems.length > 0 && (
         <>
-          <div className="mt-6 flex items-center justify-between border-t border-slate-100 pt-4">
+          <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-slate-100 pt-4">
             <p className="text-lg font-bold text-slate-900">
               Total: <span className="text-blue-700">PKR {total.toFixed(0)}</span>
             </p>
             <Link
               to="/checkout"
-              className="rounded-md bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition-all duration-300 hover:-translate-y-0.5 hover:bg-blue-700 hover:shadow-md"
+              className="w-full sm:w-auto text-center rounded-md bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition-all duration-300 hover:-translate-y-0.5 hover:bg-blue-700 hover:shadow-md"
             >
               Proceed to Checkout →
             </Link>

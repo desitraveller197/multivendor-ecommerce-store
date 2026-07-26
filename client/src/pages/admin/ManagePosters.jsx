@@ -4,7 +4,7 @@ import Sidebar from '../../components/Sidebar'
 import axiosInstance from '../../api/axiosConfig'
 import { USE_MOCK, delay } from '../../api/mockApi'
 
-const EMPTY_FORM = { imageUrl: '', mobileImageUrl: '', linkUrl: '', active: true }
+const EMPTY_FORM = { imageUrl: '', linkUrl: '', active: true }
 
 const inputClass =
   'mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100'
@@ -16,11 +16,9 @@ function ManagePosters() {
   const [form, setForm] = useState(EMPTY_FORM)
   const [saving, setSaving] = useState(false)
   const [uploadingDesktop, setUploadingDesktop] = useState(false)
-  const [uploadingMobile, setUploadingMobile] = useState(false)
   const [confirmDeleteId, setConfirmDeleteId] = useState(null)
   const [deleting, setDeleting] = useState(false)
   const desktopFileRef = useRef(null)
-  const mobileFileRef = useRef(null)
 
   const load = async () => {
     setLoading(true)
@@ -29,7 +27,7 @@ function ManagePosters() {
       if (USE_MOCK) {
         await delay(400)
         setPosters([
-          { id: 'p1', title: 'Eid Sale 2024', subtitle: 'Up to 50% off on selected items', imageUrl: '', mobileImageUrl: '', linkUrl: '/products', active: true, order: 0 },
+          { id: 'p1', title: 'Eid Sale 2024', subtitle: 'Up to 50% off on selected items', imageUrl: '', linkUrl: '/products', active: true, order: 0 },
         ])
       } else {
         // Admin call — token attached via axiosInstance interceptor
@@ -73,7 +71,7 @@ function ManagePosters() {
   const handleCreate = async (e) => {
     e.preventDefault()
     setError('')
-    if (!form.imageUrl.trim()) { setError('Please upload a desktop poster image.'); return }
+    if (!form.imageUrl.trim()) { setError('Please upload a poster image.'); return }
     setSaving(true)
     try {
       if (USE_MOCK) {
@@ -120,7 +118,7 @@ function ManagePosters() {
   }
 
   return (
-    <PageFrame title="Manage Posters" description="Upload and manage hero slideshow posters for desktop and mobile screens.">
+    <PageFrame title="Manage Posters" description="Upload and manage hero slideshow posters for the homepage.">
       <div className="grid gap-4 lg:grid-cols-4">
         <div className="lg:col-span-1">
           <Sidebar role="admin" />
@@ -131,16 +129,16 @@ function ManagePosters() {
           <div className="rounded-lg bg-white p-5 shadow-sm">
             <h2 className="text-lg font-semibold text-slate-900">Add New Poster</h2>
             <p className="text-xs text-slate-500 mt-0.5 mb-4">
-              Upload images for Desktop and Mobile. On mobile devices, the mobile poster will automatically be shown and shuffled.
+              Upload poster image and set destination link for the homepage hero slider.
             </p>
             {error && <div className="mb-3 rounded bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
             <form onSubmit={handleCreate} className="grid gap-5 sm:grid-cols-2">
 
-              {/* Desktop Poster Upload */}
-              <div className="rounded-lg border border-slate-200 p-4 bg-slate-50/50">
+              {/* Poster Image Upload */}
+              <div className="sm:col-span-2 rounded-lg border border-slate-200 p-4 bg-slate-50/50">
                 <div className="flex items-center justify-between mb-2">
-                  <label className="text-sm font-semibold text-slate-800">1. Desktop Poster Image *</label>
-                  <span className="text-[10px] uppercase font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">Desktop View</span>
+                  <label className="text-sm font-semibold text-slate-800">Poster Image *</label>
+                  <span className="text-[10px] uppercase font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">Hero Banner</span>
                 </div>
                 <div className="mt-1 flex items-center gap-3">
                   <input
@@ -154,8 +152,8 @@ function ManagePosters() {
                 </div>
                 {form.imageUrl && !uploadingDesktop && (
                   <div className="mt-2 flex items-center gap-2">
-                    <img src={form.imageUrl} alt="desktop preview" className="h-16 w-32 rounded object-cover ring-1 ring-slate-200 shadow-sm" />
-                    <span className="text-xs text-emerald-600 font-medium">✓ Desktop Image Set</span>
+                    <img src={form.imageUrl} alt="poster preview" className="h-16 w-32 rounded object-cover ring-1 ring-slate-200 shadow-sm" />
+                    <span className="text-xs text-emerald-600 font-medium">✓ Image Set</span>
                   </div>
                 )}
                 <input
@@ -163,38 +161,7 @@ function ManagePosters() {
                   value={form.imageUrl}
                   onChange={updateField('imageUrl')}
                   className={`${inputClass} mt-2 text-xs`}
-                  placeholder="Or paste Desktop image URL directly"
-                />
-              </div>
-
-              {/* Mobile Poster Upload */}
-              <div className="rounded-lg border border-slate-200 p-4 bg-slate-50/50">
-                <div className="flex items-center justify-between mb-2">
-                  <label className="text-sm font-semibold text-slate-800">2. Mobile Poster Image (Optional)</label>
-                  <span className="text-[10px] uppercase font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">Mobile View</span>
-                </div>
-                <div className="mt-1 flex items-center gap-3">
-                  <input
-                    ref={mobileFileRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageUpload('mobileImageUrl', setUploadingMobile, mobileFileRef)}
-                    className="block w-full text-xs text-slate-600 file:mr-3 file:rounded file:border-0 file:bg-amber-600 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white hover:file:bg-amber-700"
-                  />
-                  {uploadingMobile && <span className="text-xs text-amber-600 animate-pulse">Uploading…</span>}
-                </div>
-                {form.mobileImageUrl && !uploadingMobile && (
-                  <div className="mt-2 flex items-center gap-2">
-                    <img src={form.mobileImageUrl} alt="mobile preview" className="h-16 w-16 rounded object-cover ring-1 ring-slate-200 shadow-sm" />
-                    <span className="text-xs text-emerald-600 font-medium">✓ Mobile Image Set</span>
-                  </div>
-                )}
-                <input
-                  type="text"
-                  value={form.mobileImageUrl}
-                  onChange={updateField('mobileImageUrl')}
-                  className={`${inputClass} mt-2 text-xs`}
-                  placeholder="Or paste Mobile image URL directly (falls back to desktop if empty)"
+                  placeholder="Or paste image URL directly"
                 />
               </div>
 
@@ -209,7 +176,7 @@ function ManagePosters() {
               </div>
 
               <div className="sm:col-span-2">
-                <button type="submit" disabled={saving || uploadingDesktop || uploadingMobile} className="rounded bg-blue-600 px-5 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60 transition">
+                <button type="submit" disabled={saving || uploadingDesktop} className="rounded bg-blue-600 px-5 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60 transition">
                   {saving ? 'Saving…' : 'Add Poster'}
                 </button>
               </div>
@@ -230,25 +197,12 @@ function ManagePosters() {
                 {posters.map((poster) => (
                   <div key={poster.id || poster._id} className="flex flex-col gap-3 rounded-lg border border-slate-200 p-3.5 sm:flex-row sm:items-center">
                     <div className="flex items-center gap-3 shrink-0">
-                      {/* Desktop Image Thumbnail */}
+                      {/* Image Thumbnail */}
                       <div className="flex flex-col items-center gap-1">
-                        <span className="text-[9px] uppercase font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">Desktop</span>
                         {poster.imageUrl ? (
-                          <img src={poster.imageUrl} alt="Desktop poster" className="h-14 w-24 rounded object-cover ring-1 ring-slate-200" />
+                          <img src={poster.imageUrl} alt="Poster" className="h-14 w-28 rounded object-cover ring-1 ring-slate-200" />
                         ) : (
-                          <div className="flex h-14 w-24 items-center justify-center rounded bg-slate-100 text-xl">🖼️</div>
-                        )}
-                      </div>
-
-                      {/* Mobile Image Thumbnail */}
-                      <div className="flex flex-col items-center gap-1">
-                        <span className="text-[9px] uppercase font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded">Mobile</span>
-                        {poster.mobileImageUrl ? (
-                          <img src={poster.mobileImageUrl} alt="Mobile poster" className="h-14 w-12 rounded object-cover ring-1 ring-slate-200" />
-                        ) : (
-                          <div className="flex h-14 w-12 items-center justify-center rounded bg-amber-50/60 text-xs text-amber-700 font-medium text-center px-1">
-                            Same as desktop
-                          </div>
+                          <div className="flex h-14 w-28 items-center justify-center rounded bg-slate-100 text-xl">🖼️</div>
                         )}
                       </div>
                     </div>
@@ -257,17 +211,6 @@ function ManagePosters() {
                       <p className="truncate text-xs font-mono text-slate-600 bg-slate-50 p-1.5 rounded border border-slate-100">
                         Link: {poster.linkUrl || 'No link (defaults to /products)'}
                       </p>
-                      <div className="mt-1 flex items-center gap-2">
-                        {poster.mobileImageUrl ? (
-                          <span className="inline-flex items-center text-[11px] font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">
-                            ✓ Mobile optimized banner active
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center text-[11px] font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
-                            Uses desktop banner on mobile
-                          </span>
-                        )}
-                      </div>
                     </div>
 
                     <div className="flex shrink-0 items-center gap-2">

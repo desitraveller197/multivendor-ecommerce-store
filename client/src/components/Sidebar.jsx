@@ -44,12 +44,12 @@ function Sidebar({ role }) {
   return (
     <aside className="h-fit rounded-lg bg-white p-4 shadow-sm">
       <h2 className="text-lg font-semibold capitalize text-slate-900">{role} Panel</h2>
-      <nav className="mt-4 space-y-2">
+      <nav className="mt-3 flex overflow-x-auto gap-1.5 pb-1 lg:pb-0 lg:flex-col lg:space-y-1 lg:gap-0 scrollbar-none">
         {links.map((link) => (
           <Link
             key={link.to}
             to={link.to}
-            className="block rounded-md px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
+            className="whitespace-nowrap rounded-md px-3 py-2 text-xs font-semibold sm:text-sm text-slate-700 bg-slate-50 hover:bg-blue-50 hover:text-blue-700 lg:bg-transparent lg:hover:bg-slate-100 transition-colors shrink-0"
           >
             {link.label}
           </Link>
