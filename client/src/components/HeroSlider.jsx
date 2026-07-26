@@ -6,7 +6,6 @@ const FALLBACK_POSTERS = [
   {
     id: 'fb1',
     imageUrl: '/images/hero_default.png',
-    mobileImageUrl: '/images/hero_default.png',
     linkUrl: '/products',
   },
 ]
@@ -17,20 +16,8 @@ function HeroSlider() {
   const [current, setCurrent] = useState(0)
   const [direction, setDirection] = useState(1)
   const [isTransitioning, setIsTransitioning] = useState(false)
-  const [isMobile, setIsMobile] = useState(false)
   const timerRef = useRef(null)
   const navigate = useNavigate()
-
-  useEffect(() => {
-    const checkMobile = () => {
-      const mobileWidth = window.innerWidth < 768
-      const mobileUA = typeof navigator !== 'undefined' && /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
-      setIsMobile(mobileWidth || mobileUA)
-    }
-    checkMobile()
-    window.addEventListener('resize', checkMobile)
-    return () => window.removeEventListener('resize', checkMobile)
-  }, [])
 
   useEffect(() => {
     axiosInstance
@@ -43,20 +30,11 @@ function HeroSlider() {
       .finally(() => setLoaded(true))
   }, [])
 
-  const rawPosters = posters.length > 0 ? posters : FALLBACK_POSTERS
-
-  // Filter slides strictly by device mode:
-  // On Mobile: ONLY use posters that have a dedicated mobileImageUrl
-  // On Desktop: ONLY use posters that have an imageUrl
-  const slides = isMobile
-    ? rawPosters.filter((p) => p.mobileImageUrl && p.mobileImageUrl.trim() !== '')
-    : rawPosters.filter((p) => p.imageUrl && p.imageUrl.trim() !== '')
-
-  const activeSlides = slides.length > 0 ? slides : rawPosters
-  const totalSlides = activeSlides.length
+  const slides = posters.length > 0 ? posters : FALLBACK_POSTERS
+  const totalSlides = slides.length
 
   const safeIndex = totalSlides > 0 ? ((current % totalSlides) + totalSlides) % totalSlides : 0
-  const slide = activeSlides[safeIndex] || activeSlides[0] || FALLBACK_POSTERS[0]
+  const slide = slides[safeIndex] || slides[0] || FALLBACK_POSTERS[0]
 
   const goTo = useCallback(
     (idx, dir = 1) => {
@@ -94,9 +72,7 @@ function HeroSlider() {
   }, [next, totalSlides])
 
   const destination = slide.linkUrl || '/products'
-  const displayImage = isMobile
-    ? (slide.mobileImageUrl || slide.imageUrl || '')
-    : (slide.imageUrl || slide.mobileImageUrl || '')
+  const displayImage = slide.imageUrl || slide.mobileImageUrl || ''
 
   const handleBannerClick = () => {
     navigate(destination)
@@ -128,7 +104,7 @@ function HeroSlider() {
   if (!loaded) {
     return (
       <div
-        className="relative overflow-hidden rounded-2xl shadow-xl bg-gradient-to-br from-slate-100 to-slate-200 h-[200px] sm:h-[280px] md:h-[340px]"
+        className="relative overflow-hidden rounded-2xl shadow-xl bg-gradient-to-br from-slate-100 to-slate-200 h-[180px] xs:h-[220px] sm:h-[300px] md:h-[360px] lg:h-[400px]"
         aria-hidden="true"
       />
     )
@@ -140,7 +116,7 @@ function HeroSlider() {
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
-      className="group relative overflow-hidden rounded-2xl shadow-xl cursor-pointer h-[200px] sm:h-[280px] md:h-[340px]"
+      className="group relative overflow-hidden rounded-2xl shadow-xl cursor-pointer w-full h-[180px] xs:h-[220px] sm:h-[300px] md:h-[360px] lg:h-[400px] bg-slate-900"
       role="link"
       tabIndex={0}
       onKeyDown={(e) => e.key === 'Enter' && handleBannerClick()}
@@ -148,7 +124,7 @@ function HeroSlider() {
     >
       {/* Background image layer */}
       <div
-        key={`${safeIndex}-${isMobile ? 'mob' : 'desk'}`}
+        key={safeIndex}
         className={`absolute inset-0 transition-all duration-500 ease-in-out ${
           isTransitioning
             ? direction > 0 ? 'opacity-0 scale-105' : 'opacity-0 scale-95'
@@ -158,7 +134,7 @@ function HeroSlider() {
         {displayImage ? (
           <img
             src={displayImage}
-            alt={isMobile ? 'Mobile Event Poster' : 'Desktop Event Poster'}
+            alt="Hero Banner"
             className="absolute inset-0 h-full w-full object-cover object-center"
             onError={(e) => { e.currentTarget.style.display = 'none' }}
           />
@@ -196,7 +172,7 @@ function HeroSlider() {
       {/* Dots */}
       {totalSlides > 1 && (
         <div className="absolute bottom-3 sm:bottom-4 right-4 sm:right-5 flex gap-1.5 z-10">
-          {activeSlides.map((_, i) => (
+          {slides.map((_, i) => (
             <button
               key={i}
               type="button"
