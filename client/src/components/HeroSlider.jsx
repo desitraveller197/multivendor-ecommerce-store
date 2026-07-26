@@ -101,7 +101,7 @@ function HeroSlider() {
   if (!loaded) {
     return (
       <div
-        className="relative overflow-hidden rounded-2xl shadow-xl bg-gradient-to-br from-slate-100 to-slate-200 h-[200px] sm:h-[280px] md:h-[340px]"
+        className="relative overflow-hidden rounded-2xl shadow-xl bg-gradient-to-br from-slate-100 to-slate-200 h-[250px] sm:h-[360px] md:h-[440px] lg:h-[480px]"
         aria-hidden="true"
       />
     )
@@ -113,7 +113,7 @@ function HeroSlider() {
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
-      className="group relative overflow-hidden rounded-2xl shadow-xl cursor-pointer h-[200px] sm:h-[280px] md:h-[340px]"
+      className="group relative overflow-hidden rounded-2xl shadow-xl cursor-pointer h-[250px] sm:h-[360px] md:h-[440px] lg:h-[480px]"
       role="link"
       tabIndex={0}
       onKeyDown={(e) => e.key === 'Enter' && handleBannerClick()}
